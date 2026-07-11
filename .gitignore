@@ -1,0 +1,39 @@
+# OS
+.DS_Store
+
+# Node/TypeScript
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+coverage/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+.metro-cache/
+
+# iOS / Android artifacts
+ios/build/
+ios/Pods/
+android/build/
+android/app/build/
+android/.gradle/
+*.keystore
+
+# IDE
+.idea/
+.vscode/
+
+# Env and credentials
+.env
+.env.*
+
+# Vercel
+.vercel

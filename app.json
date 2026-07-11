@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "PedeAi",
+    "slug": "pedeai",
+    "scheme": "pedeai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "sdkVersion": "51.0.0",
+    "platforms": ["ios", "android", "web"],
+    "web": {
+      "name": "PedeAí",
+      "shortName": "PedeAí",
+      "bundler": "metro"
+    },
+    "ios": { "supportsTablet": true },
+    "android": {}
+  }
+}
