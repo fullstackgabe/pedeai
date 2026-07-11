@@ -15,10 +15,10 @@ export const colors = {
   blueSoft: '#dbeafe',
 }
 
-export const TAMANHOS: { key: 'P' | 'M' | 'G'; label: string; maxIngredientes: number }[] = [
-  { key: 'P', label: 'Pequena', maxIngredientes: 4 },
-  { key: 'M', label: 'Média', maxIngredientes: 6 },
-  { key: 'G', label: 'Grande', maxIngredientes: 8 },
+export const TAMANHOS: { key: 'P' | 'M' | 'G'; label: string; hint: string }[] = [
+  { key: 'P', label: 'Pequena', hint: 'mata a fome' },
+  { key: 'M', label: 'Média', hint: 'a clássica' },
+  { key: 'G', label: 'Grande', hint: 'reforçada' },
 ]
 
 export const moeda = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`

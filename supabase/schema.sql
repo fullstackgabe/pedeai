@@ -12,6 +12,7 @@ create table public.ingredientes (
   id uuid primary key default gen_random_uuid(),
   nome text not null unique,
   disponivel boolean not null default true,
+  categoria text not null default 'acompanhamento' check (categoria in ('carne','acompanhamento')),
   created_at timestamptz not null default now()
 );
 
@@ -42,6 +43,9 @@ create table public.pedidos (
   total numeric not null,
   status text not null default 'novo' check (status in ('novo','em_preparo','saiu_entrega','pronto_retirada','concluido','cancelado')),
   observacoes text,
+  pago boolean not null default false,
+  mp_payment_id text,
+  pix_copia_cola text,
   created_at timestamptz not null default now()
 );
 create index pedidos_status_idx on public.pedidos (status);
@@ -123,10 +127,10 @@ end;
 $$;
 
 create or replace function public.status_pedido(p_id uuid)
-returns table (status text, tipo text, forma_pagamento text, total numeric, created_at timestamptz)
+returns table (status text, tipo text, forma_pagamento text, total numeric, created_at timestamptz, pago boolean, pix_copia_cola text)
 language sql security definer set search_path = public stable
 as $$
-  select status, tipo, forma_pagamento, total, created_at from pedidos where id = p_id;
+  select status, tipo, forma_pagamento, total, created_at, pago, pix_copia_cola from pedidos where id = p_id;
 $$;
 
 revoke all on function public.criar_pedido from public;
@@ -138,20 +142,21 @@ grant execute on function public.status_pedido to anon, authenticated;
 alter publication supabase_realtime add table public.pedidos;
 
 -- seed do cardápio
-insert into public.ingredientes (nome, disponivel) values
-  ('Arroz branco', true),
-  ('Arroz integral', true),
-  ('Feijão carioca', true),
-  ('Feijão preto', true),
-  ('Frango grelhado', true),
-  ('Carne de panela', true),
-  ('Bife acebolado', true),
-  ('Strogonoff de frango', false),
-  ('Macarrão ao alho e óleo', true),
-  ('Farofa', true),
-  ('Batata frita', true),
-  ('Purê de batata', false),
-  ('Ovo frito', true),
-  ('Salada verde', true),
-  ('Legumes refogados', true),
-  ('Banana à milanesa', false);
+insert into public.ingredientes (nome, disponivel, categoria) values
+  ('Arroz branco', true, 'acompanhamento'),
+  ('Arroz integral', true, 'acompanhamento'),
+  ('Feijão carioca', true, 'acompanhamento'),
+  ('Feijão preto', true, 'acompanhamento'),
+  ('Frango à parmegiana', true, 'carne'),
+  ('Carne de panela', true, 'carne'),
+  ('Strogonoff de frango', false, 'carne'),
+  ('Bisteca suína', false, 'carne'),
+  ('Peixe frito', false, 'carne'),
+  ('Macarrão ao alho e óleo', true, 'acompanhamento'),
+  ('Farofa', true, 'acompanhamento'),
+  ('Batata frita', true, 'acompanhamento'),
+  ('Purê de batata', false, 'acompanhamento'),
+  ('Ovo frito', true, 'acompanhamento'),
+  ('Salada verde', true, 'acompanhamento'),
+  ('Legumes refogados', true, 'acompanhamento'),
+  ('Banana à milanesa', false, 'acompanhamento');

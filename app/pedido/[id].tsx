@@ -4,23 +4,23 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import QRCode from 'react-native-qrcode-svg'
 import { colors, moeda } from '@/theme'
-import { fetchConfig, statusPedido } from '@/lib/repo'
+import { cobrancaPix, fetchConfig, statusPedido } from '@/lib/repo'
 import { pixCopiaECola } from '@/lib/pix'
 import { Button, Card } from '@/components/ui'
 import type { Config, StatusPedido, StatusResumo } from '@/types'
 
 const PASSOS_ENTREGA: { key: StatusPedido; label: string; emoji: string }[] = [
   { key: 'novo', label: 'Pedido recebido', emoji: '📥' },
-  { key: 'em_preparo', label: 'Em preparo', emoji: '👨‍🍳' },
+  { key: 'em_preparo', label: 'Pedido sendo preparado', emoji: '👨‍🍳' },
   { key: 'saiu_entrega', label: 'Saiu para entrega', emoji: '🛵' },
-  { key: 'concluido', label: 'Entregue', emoji: '✅' },
+  { key: 'concluido', label: 'Entregue', emoji: '🎉' },
 ]
 
 const PASSOS_RETIRADA: { key: StatusPedido; label: string; emoji: string }[] = [
   { key: 'novo', label: 'Pedido recebido', emoji: '📥' },
-  { key: 'em_preparo', label: 'Em preparo', emoji: '👨‍🍳' },
+  { key: 'em_preparo', label: 'Pedido sendo preparado', emoji: '👨‍🍳' },
   { key: 'pronto_retirada', label: 'Pronto para retirada', emoji: '🛍️' },
-  { key: 'concluido', label: 'Retirado', emoji: '✅' },
+  { key: 'concluido', label: 'Retirado', emoji: '🎉' },
 ]
 
 export default function AcompanharPedido() {
@@ -29,9 +29,12 @@ export default function AcompanharPedido() {
 
   const [resumo, setResumo] = useState<StatusResumo | null>(null)
   const [config, setConfig] = useState<Config | null>(null)
+  const [mpQr, setMpQr] = useState<string | null>(null)
   const [naoEncontrado, setNaoEncontrado] = useState(false)
   const [copiado, setCopiado] = useState(false)
+  const [verificando, setVerificando] = useState(false)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const cobrancaPedida = useRef(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -42,6 +45,12 @@ export default function AcompanharPedido() {
         return
       }
       setResumo(r)
+      if (r.forma_pagamento === 'pix' && !r.pago && !r.pix_copia_cola && !cobrancaPedida.current) {
+        cobrancaPedida.current = true
+        const cob = await cobrancaPix(String(id))
+        if (cob?.qr_code) setMpQr(cob.qr_code)
+        if (cob?.pago) load()
+      }
     } catch {}
   }, [id])
 
@@ -76,8 +85,8 @@ export default function AcompanharPedido() {
   const cancelado = resumo.status === 'cancelado'
   const idxAtual = passos.findIndex((p) => p.key === resumo.status)
 
-  const pix =
-    resumo.forma_pagamento === 'pix' && config
+  const pix = resumo.pix_copia_cola || mpQr ||
+    (resumo.forma_pagamento === 'pix' && config
       ? pixCopiaECola({
           chave: config.chave_pix,
           nome: config.nome_pix,
@@ -85,7 +94,7 @@ export default function AcompanharPedido() {
           valor: Number(resumo.total),
           txid: String(id).slice(0, 25),
         })
-      : null
+      : null)
 
   const copiar = async () => {
     if (!pix) return
@@ -96,6 +105,13 @@ export default function AcompanharPedido() {
     }
     setCopiado(true)
     setTimeout(() => setCopiado(false), 2500)
+  }
+
+  const verificarPagamento = async () => {
+    setVerificando(true)
+    await cobrancaPix(String(id))
+    await load()
+    setVerificando(false)
   }
 
   return (
@@ -145,7 +161,16 @@ export default function AcompanharPedido() {
         </Card>
       ) : null}
 
-      {pix && !cancelado && resumo.status !== 'concluido' ? (
+      {resumo.forma_pagamento === 'pix' && resumo.pago ? (
+        <Card style={{ backgroundColor: colors.greenSoft, borderColor: colors.green, alignItems: 'center' }}>
+          <Text style={{ fontSize: 26 }}>💠</Text>
+          <Text style={{ color: colors.green, fontWeight: '900', fontSize: 16, marginTop: 4 }}>
+            Pagamento confirmado!
+          </Text>
+        </Card>
+      ) : null}
+
+      {pix && !resumo.pago && !cancelado && resumo.status !== 'concluido' ? (
         <Card style={{ alignItems: 'center' }}>
           <Text style={{ fontWeight: '800', color: colors.text, fontSize: 16, marginBottom: 4 }}>
             💠 Pague com Pix
@@ -178,8 +203,15 @@ export default function AcompanharPedido() {
             variant={copiado ? 'outline' : 'primary'}
             style={{ marginTop: 10, alignSelf: 'stretch' }}
           />
-          <Text style={{ color: colors.textSoft, fontSize: 12, textAlign: 'center', marginTop: 10 }}>
-            Valor: {moeda(Number(resumo.total))} · o restaurante confirma o pagamento ao receber
+          <Button
+            title="Já paguei — verificar"
+            onPress={verificarPagamento}
+            loading={verificando}
+            variant="ghost"
+            style={{ marginTop: 4, alignSelf: 'stretch' }}
+          />
+          <Text style={{ color: colors.textSoft, fontSize: 12, textAlign: 'center', marginTop: 6 }}>
+            Valor: {moeda(Number(resumo.total))} · a confirmação aparece aqui automaticamente
           </Text>
         </Card>
       ) : null}

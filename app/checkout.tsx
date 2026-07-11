@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import { useRouter } from 'expo-router'
-import { colors, fmtTelefone, moeda } from '@/theme'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { colors, moeda } from '@/theme'
 import { criarPedido, fetchConfig } from '@/lib/repo'
-import { precoTamanho, useCart } from '@/lib/cart'
-import { loadCliente, saveCliente } from '@/lib/storage'
+import { useCart } from '@/lib/cart'
+import { loadCliente, ClienteCache } from '@/lib/storage'
 import { Button, Card, Field, SectionTitle } from '@/components/ui'
 import type { Config, FormaPagamento, TipoPedido } from '@/types'
 
@@ -19,48 +19,41 @@ export default function Checkout() {
   const { itens, subtotal, clear } = useCart()
 
   const [config, setConfig] = useState<Config | null>(null)
-  const [nome, setNome] = useState('')
-  const [telefone, setTelefone] = useState('')
-  const [endereco, setEndereco] = useState('')
+  const [cliente, setCliente] = useState<ClienteCache | null>(null)
   const [tipo, setTipo] = useState<TipoPedido>('entrega')
   const [pagamento, setPagamento] = useState<FormaPagamento>('pix')
   const [obs, setObs] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchConfig().then(setConfig).catch(() => setErro('Não foi possível carregar os preços.'))
-    loadCliente().then((c) => {
-      if (c) {
-        setNome(c.nome)
-        setTelefone(c.telefone)
-        setEndereco(c.endereco)
-      }
-    })
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      fetchConfig().then(setConfig).catch(() => setErro('Não foi possível carregar os preços.'))
+      loadCliente().then((c) => {
+        if (!c) {
+          router.replace('/dados?voltar=checkout')
+        } else {
+          setCliente(c)
+        }
+      })
+    }, []),
+  )
 
   const taxa = tipo === 'entrega' && config ? Number(config.taxa_entrega) : 0
   const sub = config ? subtotal(config) : 0
   const total = sub + taxa
 
-  const valido = useMemo(() => {
-    if (itens.length === 0) return false
-    if (nome.trim().length < 2) return false
-    if (telefone.replace(/\D/g, '').length < 10) return false
-    if (tipo === 'entrega' && endereco.trim().length < 8) return false
-    return true
-  }, [itens, nome, telefone, tipo, endereco])
+  const valido = useMemo(() => itens.length > 0 && !!cliente, [itens, cliente])
 
   const enviar = async () => {
-    if (!valido || enviando) return
+    if (!valido || !cliente || enviando) return
     setEnviando(true)
     setErro(null)
     try {
-      await saveCliente({ nome: nome.trim(), telefone: telefone.trim(), endereco: endereco.trim() })
       const id = await criarPedido({
-        nome: nome.trim(),
-        telefone: telefone.trim(),
-        endereco: tipo === 'entrega' ? endereco.trim() : null,
+        nome: cliente.nome,
+        telefone: cliente.telefone,
+        endereco: tipo === 'entrega' ? cliente.endereco : null,
         tipo,
         itens,
         formaPagamento: pagamento,
@@ -86,28 +79,31 @@ export default function Checkout() {
         <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, marginTop: 8 }}>
           Sua sacola está vazia
         </Text>
-        <Button title="Montar uma marmita" onPress={() => router.replace('/')} style={{ marginTop: 16 }} />
+        <Button title="Montar uma marmita" onPress={() => router.replace('/montar')} style={{ marginTop: 16 }} />
       </View>
     )
   }
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
-      <SectionTitle>Seus dados</SectionTitle>
-      <Field label="Nome" value={nome} onChangeText={setNome} placeholder="Seu nome" autoCapitalize="words" />
-      <Field
-        label="Telefone (WhatsApp)"
-        value={telefone}
-        onChangeText={(t) => setTelefone(fmtTelefone(t))}
-        placeholder="(41) 99999-9999"
-        keyboardType="phone-pad"
-      />
+      {cliente ? (
+        <Card>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontWeight: '800', color: colors.text, fontSize: 15 }}>📍 {cliente.nome}</Text>
+            <Pressable onPress={() => router.push('/dados?voltar=checkout')} hitSlop={8}>
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>Trocar</Text>
+            </Pressable>
+          </View>
+          <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 4 }}>{cliente.telefone}</Text>
+          <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 2 }}>{cliente.endereco}</Text>
+        </Card>
+      ) : null}
 
       <SectionTitle>Entrega ou retirada?</SectionTitle>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
         {(
           [
-            { key: 'entrega', label: '🛵 Entrega', hint: config ? `+ ${moeda(Number(config.taxa_entrega))}` : '' },
+            { key: 'entrega', label: '🛵 Entrega', hint: config ? `+ ${moeda(Number(config.taxa_entrega))} · Curitiba e região` : '' },
             { key: 'retirada', label: '🏪 Retirada', hint: 'sem taxa' },
           ] as { key: TipoPedido; label: string; hint: string }[]
         ).map((op) => {
@@ -127,26 +123,11 @@ export default function Checkout() {
               }}
             >
               <Text style={{ fontWeight: '800', color: ativo ? colors.primaryDark : colors.text }}>{op.label}</Text>
-              <Text style={{ color: colors.textSoft, fontSize: 12, marginTop: 2 }}>{op.hint}</Text>
+              <Text style={{ color: colors.textSoft, fontSize: 11, marginTop: 2, textAlign: 'center' }}>{op.hint}</Text>
             </Pressable>
           )
         })}
       </View>
-
-      {tipo === 'entrega' ? (
-        <>
-          <Field
-            label="Endereço de entrega"
-            value={endereco}
-            onChangeText={setEndereco}
-            placeholder="Rua, número, bairro e complemento"
-            multiline
-          />
-          <Text style={{ color: colors.textSoft, fontSize: 12, marginTop: -8, marginBottom: 14 }}>
-            Entregamos em Curitiba e região · taxa fixa {config ? moeda(Number(config.taxa_entrega)) : 'R$ 10,00'}
-          </Text>
-        </>
-      ) : null}
 
       <SectionTitle>Pagamento</SectionTitle>
       <View style={{ gap: 8, marginBottom: 14 }}>
@@ -192,9 +173,7 @@ export default function Checkout() {
         </View>
       </Card>
 
-      {erro ? (
-        <Text style={{ color: colors.red, fontWeight: '600', marginBottom: 10 }}>{erro}</Text>
-      ) : null}
+      {erro ? <Text style={{ color: colors.red, fontWeight: '600', marginBottom: 10 }}>{erro}</Text> : null}
 
       <Button
         title={pagamento === 'pix' ? 'Enviar pedido e pagar com Pix' : 'Enviar pedido'}
@@ -202,9 +181,6 @@ export default function Checkout() {
         disabled={!valido}
         loading={enviando}
       />
-      <Text style={{ color: colors.textSoft, fontSize: 12, textAlign: 'center', marginTop: 10 }}>
-        Seus dados ficam salvos neste aparelho para o próximo pedido.
-      </Text>
     </ScrollView>
   )
 }

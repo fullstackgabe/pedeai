@@ -34,6 +34,8 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="dados" options={{ title: 'Seus dados' }} />
+            <Stack.Screen name="montar" options={{ title: 'Monte sua marmita' }} />
             <Stack.Screen name="checkout" options={{ title: 'Finalizar pedido' }} />
             <Stack.Screen name="pedido/[id]" options={{ title: 'Acompanhar pedido' }} />
             <Stack.Screen name="login" options={{ title: 'Área do restaurante' }} />

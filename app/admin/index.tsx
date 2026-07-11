@@ -10,12 +10,13 @@ import {
   fetchIngredientesAdmin,
   fetchConfig,
   fetchPedidos,
+  marcarPago,
   removeIngrediente,
   salvarConfig,
   setIngredienteDisponivel,
 } from '@/lib/repo'
 import { Badge, Button, Card, SectionTitle } from '@/components/ui'
-import type { Config, Ingrediente, Pedido, StatusPedido } from '@/types'
+import type { CategoriaIngrediente, Config, Ingrediente, Pedido, StatusPedido } from '@/types'
 
 type Aba = 'pedidos' | 'cardapio' | 'ajustes'
 
@@ -151,6 +152,15 @@ function AbaPedidos() {
     }
   }
 
+  const pagar = async (p: Pedido) => {
+    setPedidos((prev) => prev.map((x) => (x.id === p.id ? { ...x, pago: true } : x)))
+    try {
+      await marcarPago(p.id)
+    } catch {
+      load()
+    }
+  }
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -191,13 +201,21 @@ function AbaPedidos() {
           <Text style={{ color: colors.textSoft, marginTop: 8 }}>Nenhum pedido por aqui.</Text>
         </Card>
       ) : (
-        visiveis.map((p) => <PedidoCard key={p.id} pedido={p} onMudar={mudar} />)
+        visiveis.map((p) => <PedidoCard key={p.id} pedido={p} onMudar={mudar} onPagar={pagar} />)
       )}
     </ScrollView>
   )
 }
 
-function PedidoCard({ pedido: p, onMudar }: { pedido: Pedido; onMudar: (p: Pedido, s: StatusPedido) => void }) {
+function PedidoCard({
+  pedido: p,
+  onMudar,
+  onPagar,
+}: {
+  pedido: Pedido
+  onMudar: (p: Pedido, s: StatusPedido) => void
+  onPagar: (p: Pedido) => void
+}) {
   const hora = new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const ativo = !['concluido', 'cancelado'].includes(p.status)
 
@@ -246,6 +264,13 @@ function PedidoCard({ pedido: p, onMudar }: { pedido: Pedido; onMudar: (p: Pedid
           bg={colors.primarySoft}
           fg={colors.primaryDark}
         />
+        {p.forma_pagamento === 'pix' ? (
+          <Badge
+            text={p.pago ? '💰 Pago' : '⏳ Aguardando Pix'}
+            bg={p.pago ? colors.greenSoft : colors.redSoft}
+            fg={p.pago ? colors.green : colors.red}
+          />
+        ) : null}
       </View>
 
       {p.tipo === 'entrega' && p.endereco ? (
@@ -277,6 +302,15 @@ function PedidoCard({ pedido: p, onMudar }: { pedido: Pedido; onMudar: (p: Pedid
       {ativo ? (
         <View style={{ marginTop: 12, gap: 8 }}>
           {proximo ? <Button title={proximo.label} onPress={() => onMudar(p, proximo.status)} /> : null}
+          {p.forma_pagamento === 'pix' && !p.pago ? (
+            <Button
+              title="Confirmar Pix recebido 💰"
+              variant="outline"
+              onPress={() =>
+                confirmar('Confirmar pagamento', `Marcar o Pix de ${p.nome_cliente} como recebido?`, () => onPagar(p))
+              }
+            />
+          ) : null}
           <Button
             title="Cancelar pedido"
             variant="danger"
@@ -294,6 +328,7 @@ function AbaCardapio() {
   const [itens, setItens] = useState<Ingrediente[]>([])
   const [loading, setLoading] = useState(true)
   const [novo, setNovo] = useState('')
+  const [novaCat, setNovaCat] = useState<CategoriaIngrediente>('acompanhamento')
   const [salvando, setSalvando] = useState(false)
 
   const load = useCallback(async () => {
@@ -320,7 +355,7 @@ function AbaCardapio() {
     if (novo.trim().length < 2 || salvando) return
     setSalvando(true)
     try {
-      await addIngrediente(novo)
+      await addIngrediente(novo, novaCat)
       setNovo('')
       await load()
     } catch {}
@@ -347,6 +382,43 @@ function AbaCardapio() {
   }
 
   const disponiveis = itens.filter((i) => i.disponivel).length
+  const grupos: { titulo: string; lista: Ingrediente[] }[] = [
+    { titulo: '🥩 Carnes (cliente escolhe 1)', lista: itens.filter((i) => i.categoria === 'carne') },
+    { titulo: '🥗 Acompanhamentos (todos inclusos)', lista: itens.filter((i) => i.categoria !== 'carne') },
+  ]
+
+  const linha = (ing: Ingrediente) => (
+    <View
+      key={ing.id}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.card,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 8,
+      }}
+    >
+      <Text style={{ color: ing.disponivel ? colors.text : colors.textSoft, fontWeight: '600', flex: 1 }}>
+        {ing.nome}
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Switch
+          value={ing.disponivel}
+          onValueChange={() => toggle(ing)}
+          trackColor={{ true: colors.primary, false: '#d6d3d1' }}
+          thumbColor="#fff"
+        />
+        <Pressable onPress={() => remover(ing)} hitSlop={10}>
+          <Text style={{ color: colors.red, fontSize: 15 }}>✕</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
@@ -354,7 +426,7 @@ function AbaCardapio() {
         Ligue os ingredientes disponíveis hoje. Os clientes só veem os que estão ativos ({disponiveis} no ar).
       </Text>
 
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
         <TextInput
           value={novo}
           onChangeText={setNovo}
@@ -374,37 +446,40 @@ function AbaCardapio() {
         />
         <Button title="+" onPress={adicionar} loading={salvando} style={{ paddingHorizontal: 20 }} />
       </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 18 }}>
+        {(
+          [
+            { key: 'acompanhamento', label: '🥗 Acompanhamento' },
+            { key: 'carne', label: '🥩 Carne' },
+          ] as { key: CategoriaIngrediente; label: string }[]
+        ).map((c) => (
+          <Pressable
+            key={c.key}
+            onPress={() => setNovaCat(c.key)}
+            style={{
+              backgroundColor: novaCat === c.key ? colors.primarySoft : colors.card,
+              borderWidth: 1.5,
+              borderColor: novaCat === c.key ? colors.primary : colors.border,
+              borderRadius: 999,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+            }}
+          >
+            <Text style={{ color: novaCat === c.key ? colors.primaryDark : colors.textSoft, fontWeight: '700', fontSize: 12 }}>
+              {c.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
 
-      {itens.map((ing) => (
-        <View
-          key={ing.id}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: colors.card,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: colors.border,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            marginBottom: 8,
-          }}
-        >
-          <Text style={{ color: ing.disponivel ? colors.text : colors.textSoft, fontWeight: '600', flex: 1 }}>
-            {ing.nome}
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Switch
-              value={ing.disponivel}
-              onValueChange={() => toggle(ing)}
-              trackColor={{ true: colors.primary, false: '#d6d3d1' }}
-              thumbColor="#fff"
-            />
-            <Pressable onPress={() => remover(ing)} hitSlop={10}>
-              <Text style={{ color: colors.red, fontSize: 15 }}>✕</Text>
-            </Pressable>
-          </View>
+      {grupos.map((g) => (
+        <View key={g.titulo} style={{ marginBottom: 14 }}>
+          <Text style={{ fontWeight: '800', color: colors.text, fontSize: 15, marginBottom: 8 }}>{g.titulo}</Text>
+          {g.lista.length === 0 ? (
+            <Text style={{ color: colors.textSoft, fontSize: 13, marginBottom: 8 }}>Nenhum item.</Text>
+          ) : (
+            g.lista.map(linha)
+          )}
         </View>
       ))}
     </ScrollView>

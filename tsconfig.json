@@ -18,5 +18,6 @@
       "@/theme": ["./src/theme"]
     }
   },
+  "exclude": ["node_modules", "dist", "supabase/functions"],
   "extends": "expo/tsconfig.base"
 }

@@ -1,9 +1,12 @@
 export type Tamanho = 'P' | 'M' | 'G'
 
+export type CategoriaIngrediente = 'carne' | 'acompanhamento'
+
 export type Ingrediente = {
   id: string
   nome: string
   disponivel: boolean
+  categoria: CategoriaIngrediente
 }
 
 export type Config = {
@@ -49,6 +52,9 @@ export type Pedido = {
   status: StatusPedido
   observacoes: string | null
   created_at: string
+  pago: boolean
+  mp_payment_id: string | null
+  pix_copia_cola: string | null
 }
 
 export type StatusResumo = {
@@ -57,4 +63,6 @@ export type StatusResumo = {
   forma_pagamento: FormaPagamento
   total: number
   created_at: string
+  pago: boolean
+  pix_copia_cola: string | null
 }

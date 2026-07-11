@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type {
+  CategoriaIngrediente,
   Config,
   FormaPagamento,
   Ingrediente,
@@ -19,7 +20,7 @@ export async function fetchConfig(): Promise<Config> {
 export async function fetchCardapio(): Promise<Ingrediente[]> {
   const { data, error } = await supabase
     .from('ingredientes')
-    .select('id, nome, disponivel')
+    .select('id, nome, disponivel, categoria')
     .eq('disponivel', true)
     .order('nome')
   if (error) throw error
@@ -55,6 +56,20 @@ export async function statusPedido(id: string): Promise<StatusResumo | null> {
   return (row as StatusResumo) || null
 }
 
+export async function cobrancaPix(
+  pedidoId: string,
+): Promise<{ pago?: boolean; qr_code?: string } | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('mp-pix', {
+      body: { pedido_id: pedidoId },
+    })
+    if (error) return null
+    return data as { pago?: boolean; qr_code?: string }
+  } catch {
+    return null
+  }
+}
+
 export async function fetchPedidos(): Promise<Pedido[]> {
   const { data, error } = await supabase
     .from('pedidos')
@@ -67,6 +82,11 @@ export async function fetchPedidos(): Promise<Pedido[]> {
 
 export async function atualizarStatus(id: string, status: StatusPedido) {
   const { error } = await supabase.from('pedidos').update({ status }).eq('id', id)
+  if (error) throw error
+}
+
+export async function marcarPago(id: string) {
+  const { error } = await supabase.from('pedidos').update({ pago: true }).eq('id', id)
   if (error) throw error
 }
 
@@ -83,7 +103,7 @@ export function assinarPedidos(onChange: () => void) {
 export async function fetchIngredientesAdmin(): Promise<Ingrediente[]> {
   const { data, error } = await supabase
     .from('ingredientes')
-    .select('id, nome, disponivel')
+    .select('id, nome, disponivel, categoria')
     .order('nome')
   if (error) throw error
   return (data || []) as Ingrediente[]
@@ -94,8 +114,10 @@ export async function setIngredienteDisponivel(id: string, disponivel: boolean) 
   if (error) throw error
 }
 
-export async function addIngrediente(nome: string) {
-  const { error } = await supabase.from('ingredientes').insert({ nome: nome.trim(), disponivel: true })
+export async function addIngrediente(nome: string, categoria: CategoriaIngrediente) {
+  const { error } = await supabase
+    .from('ingredientes')
+    .insert({ nome: nome.trim(), disponivel: true, categoria })
   if (error) throw error
 }
 
