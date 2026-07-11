@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { colors, moeda } from '@/theme'
 import { useAuth } from '@/lib/auth'
@@ -10,36 +10,26 @@ import {
   fetchIngredientesAdmin,
   fetchConfig,
   fetchPedidos,
+  limparPedidos,
   marcarPago,
   removeIngrediente,
   salvarConfig,
   setIngredienteDisponivel,
 } from '@/lib/repo'
-import { Badge, Button, Card, SectionTitle } from '@/components/ui'
+import { Badge, Button, Card, SectionTitle, ShareIcon, Toggle, TrashIcon, WhatsAppIcon } from '@/components/ui'
 import { Logo } from '@/components/Logo'
 import type { CategoriaIngrediente, Config, Ingrediente, Pedido, StatusPedido } from '@/types'
 
 type Aba = 'pedidos' | 'cardapio' | 'ajustes'
 
 const STATUS_LABEL: Record<StatusPedido, string> = {
-  novo: '🔔 Novo',
+  novo: 'Novo',
   confirmado: '👍 Confirmado',
   em_preparo: '👨‍🍳 Em preparo',
   saiu_entrega: '🛵 Saiu p/ entrega',
-  pronto_retirada: '🛍️ Pronto p/ retirada',
+  pronto_retirada: '📦 Pronto p/ retirada',
   concluido: '✅ Concluído',
   cancelado: '❌ Cancelado',
-}
-
-const confirmar = (titulo: string, msg: string, onOk: () => void) => {
-  if (Platform.OS === 'web') {
-    if (typeof window !== 'undefined' && window.confirm(`${titulo}\n\n${msg}`)) onOk()
-  } else {
-    Alert.alert(titulo, msg, [
-      { text: 'Voltar', style: 'cancel' },
-      { text: 'Confirmar', style: 'destructive', onPress: onOk },
-    ])
-  }
 }
 
 export default function Admin() {
@@ -73,13 +63,7 @@ export default function Admin() {
           borderBottomColor: colors.border,
         }}
       >
-        <View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Logo iconSize={22} textSize={18} />
-            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textSoft }}>· Gestão</Text>
-          </View>
-          <Text style={{ color: colors.textSoft, fontSize: 12 }}>{session.user?.email}</Text>
-        </View>
+        <Logo iconSize={22} textSize={18} />
         <Pressable
           onPress={async () => {
             await signOut()
@@ -95,8 +79,8 @@ export default function Admin() {
         {(
           [
             { key: 'pedidos', label: 'Pedidos' },
-            { key: 'cardapio', label: 'Cardápio do dia' },
-            { key: 'ajustes', label: 'Ajustes' },
+            { key: 'cardapio', label: 'Cardápio' },
+            { key: 'ajustes', label: 'Configurações' },
           ] as { key: Aba; label: string }[]
         ).map((t) => (
           <Pressable
@@ -125,7 +109,7 @@ export default function Admin() {
 function AbaPedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtro, setFiltro] = useState<'ativos' | 'todos'>('ativos')
+  const [filtro, setFiltro] = useState<'ativos' | 'finalizados'>('ativos')
 
   const load = useCallback(async () => {
     try {
@@ -145,7 +129,9 @@ function AbaPedidos() {
   }, [load])
 
   const visiveis = pedidos.filter((p) =>
-    filtro === 'todos' ? true : !['concluido', 'cancelado'].includes(p.status),
+    filtro === 'finalizados'
+      ? ['concluido', 'cancelado'].includes(p.status)
+      : !['concluido', 'cancelado'].includes(p.status),
   )
 
   const mudar = async (p: Pedido, status: StatusPedido) => {
@@ -176,12 +162,12 @@ function AbaPedidos() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {(
           [
             { key: 'ativos', label: `Ativos (${pedidos.filter((p) => !['concluido', 'cancelado'].includes(p.status)).length})` },
-            { key: 'todos', label: 'Todos' },
-          ] as { key: 'ativos' | 'todos'; label: string }[]
+            { key: 'finalizados', label: `Finalizados (${pedidos.filter((p) => ['concluido', 'cancelado'].includes(p.status)).length})` },
+          ] as { key: 'ativos' | 'finalizados'; label: string }[]
         ).map((f) => (
           <Pressable
             key={f.key}
@@ -198,12 +184,34 @@ function AbaPedidos() {
             <Text style={{ color: filtro === f.key ? '#fff' : colors.textSoft, fontWeight: '700', fontSize: 13 }}>{f.label}</Text>
           </Pressable>
         ))}
+        {filtro === 'finalizados' && pedidos.some((x) => ['concluido', 'cancelado'].includes(x.status)) ? (
+          <Pressable
+            onPress={async () => {
+              try {
+                await limparPedidos()
+                setPedidos((prev) => prev.filter((x) => !['concluido', 'cancelado'].includes(x.status)))
+              } catch {
+                load()
+              }
+            }}
+            style={{
+              backgroundColor: colors.red,
+              borderRadius: 999,
+              width: 33,
+              height: 33,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginLeft: 'auto',
+            }}
+          >
+            <TrashIcon size={17} />
+          </Pressable>
+        ) : null}
       </View>
 
       {visiveis.length === 0 ? (
         <Card style={{ alignItems: 'center', paddingVertical: 30 }}>
-          <Text style={{ fontSize: 32 }}>🧘</Text>
-          <Text style={{ color: colors.textSoft, marginTop: 8 }}>Nenhum pedido por aqui.</Text>
+          <Text style={{ color: colors.textSoft }}>Nenhum pedido por aqui ainda.</Text>
         </Card>
       ) : (
         visiveis.map((p) => <PedidoCard key={p.id} pedido={p} onMudar={mudar} onPagar={pagar} />)
@@ -221,20 +229,21 @@ function PedidoCard({
   onMudar: (p: Pedido, s: StatusPedido) => void
   onPagar: (p: Pedido) => void
 }) {
-  const hora = new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const dt = new Date(p.created_at)
+  const hora = `${dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} · ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
   const ativo = !['concluido', 'cancelado'].includes(p.status)
 
   const proximo: { status: StatusPedido; label: string } | null =
     p.status === 'novo'
-      ? { status: 'confirmado', label: 'Confirmar pedido 👍' }
+      ? { status: 'confirmado', label: 'Confirmar pedido' }
       : p.status === 'confirmado'
-        ? { status: 'em_preparo', label: 'Iniciar preparo 👨‍🍳' }
+        ? { status: 'em_preparo', label: 'Iniciar preparo' }
         : p.status === 'em_preparo'
           ? p.tipo === 'entrega'
-            ? { status: 'saiu_entrega', label: 'Saiu com o motoboy 🛵' }
-            : { status: 'pronto_retirada', label: 'Pronto p/ retirada 🛍️' }
+            ? { status: 'saiu_entrega', label: 'Saiu com o motoboy' }
+            : { status: 'pronto_retirada', label: 'Pronto p/ retirada' }
           : p.status === 'saiu_entrega' || p.status === 'pronto_retirada'
-            ? { status: 'concluido', label: 'Concluir ✅' }
+            ? { status: 'concluido', label: 'Concluir' }
             : null
 
   const whatsapp = () => {
@@ -243,67 +252,89 @@ function PedidoCard({
   }
 
   return (
-    <Card>
+    <Card style={{ opacity: ativo ? 1 : 0.55 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <Badge
-          text={STATUS_LABEL[p.status]}
-          bg={p.status === 'novo' ? colors.redSoft : p.status === 'concluido' ? colors.greenSoft : colors.primarySoft}
-          fg={p.status === 'novo' ? colors.red : p.status === 'concluido' ? colors.green : colors.primaryDark}
-        />
+        <Text style={{ fontWeight: '800', color: colors.text, fontSize: 17 }}>{p.nome_cliente}</Text>
         <Text style={{ color: colors.textSoft, fontSize: 12 }}>{hora}</Text>
       </View>
 
-      <Text style={{ fontWeight: '800', color: colors.text, fontSize: 16 }}>{p.nome_cliente}</Text>
-      <Pressable onPress={whatsapp}>
-        <Text style={{ color: colors.blue, fontWeight: '600', fontSize: 13, marginTop: 2 }}>
-          📱 {p.telefone} · chamar no WhatsApp
-        </Text>
-      </Pressable>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-        <Badge
-          text={p.tipo === 'entrega' ? '🛵 Entrega' : '🏪 Retirada'}
-          bg={p.tipo === 'entrega' ? colors.blueSoft : colors.greenSoft}
-          fg={p.tipo === 'entrega' ? colors.blue : colors.green}
-        />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        {p.status !== 'novo' ? <Badge text={STATUS_LABEL[p.status]} bg="#ececec" fg="#57534e" /> : null}
+        {p.status !== 'saiu_entrega' && p.status !== 'pronto_retirada' ? (
+          <Badge text={p.tipo === 'entrega' ? '🛵 Entrega' : '📦 Retirada'} bg="#ececec" fg="#57534e" />
+        ) : null}
         <Badge
           text={p.forma_pagamento === 'pix' ? '💠 Pix' : p.forma_pagamento === 'dinheiro' ? '💵 Dinheiro' : '💳 Cartão'}
-          bg={colors.primarySoft}
-          fg={colors.primaryDark}
+          bg="#ececec"
+          fg="#57534e"
         />
         {p.forma_pagamento === 'pix' ? (
-          <Badge
-            text={p.pago ? '💰 Pago' : '⏳ Aguardando Pix'}
-            bg={p.pago ? colors.greenSoft : colors.redSoft}
-            fg={p.pago ? colors.green : colors.red}
-          />
+          <Badge text={p.pago ? '💰 Pago' : '⏳ Aguardando Pix'} bg="#ececec" fg="#57534e" />
         ) : null}
       </View>
 
-      {p.tipo === 'entrega' && p.endereco ? (
-        <View style={{ backgroundColor: colors.blueSoft, borderRadius: 10, padding: 10, marginTop: 10 }}>
-          <Text style={{ fontWeight: '700', color: colors.blue, fontSize: 12, marginBottom: 2 }}>ENDEREÇO P/ MOTOBOY</Text>
-          <Text style={{ color: colors.text, fontSize: 14 }}>{p.endereco}</Text>
+      <Pressable
+        onPress={whatsapp}
+        disabled={!ativo}
+        style={{
+          backgroundColor: colors.greenSoft,
+          borderRadius: 10,
+          padding: 10,
+          marginTop: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <View style={{ flex: 1, paddingRight: 10 }}>
+          <Text style={{ fontWeight: '700', color: colors.green, fontSize: 12, marginBottom: 2 }}>CHAMAR NO WHATSAPP</Text>
+          <Text style={{ color: colors.text, fontSize: 14 }}>{p.telefone}</Text>
         </View>
+        <WhatsAppIcon size={26} />
+      </Pressable>
+
+      {p.tipo === 'entrega' && p.endereco ? (
+        <Pressable
+          onPress={() =>
+            Linking.openURL(
+              'https://wa.me/?text=' +
+                encodeURIComponent(`Entrega PedeAí — ${p.nome_cliente}\n📍 ${p.endereco}\n📱 ${p.telefone}`),
+            )
+          }
+          disabled={!ativo}
+          style={{
+            backgroundColor: colors.blueSoft,
+            borderRadius: 10,
+            padding: 10,
+            marginTop: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <View style={{ flex: 1, paddingRight: 10 }}>
+            <Text style={{ fontWeight: '700', color: colors.blue, fontSize: 12, marginBottom: 2 }}>ENDEREÇO P/ MOTOBOY</Text>
+            <Text style={{ color: colors.text, fontSize: 14 }}>{p.endereco}</Text>
+          </View>
+          <ShareIcon size={26} />
+        </Pressable>
       ) : null}
 
-      <View style={{ marginTop: 10 }}>
+      <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
         {(p.itens || []).map((it, i) => (
           <Text key={i} style={{ color: colors.text, fontSize: 14, marginBottom: 2 }}>
-            • {it.qtd}x Marmita {it.tamanho} — <Text style={{ color: colors.textSoft }}>{it.ingredientes.join(', ')}</Text>
+            {it.qtd}x Marmita {it.tamanho} — <Text style={{ color: colors.textSoft }}>{it.ingredientes.join(', ')}</Text>
           </Text>
         ))}
-      </View>
-
-      {p.observacoes ? (
-        <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 6, fontStyle: 'italic' }}>Obs: {p.observacoes}</Text>
-      ) : null}
-
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
-        <Text style={{ color: colors.textSoft, fontSize: 13 }}>
-          {moeda(Number(p.subtotal))}{Number(p.taxa_entrega) > 0 ? ` + ${moeda(Number(p.taxa_entrega))} frete` : ''}
-        </Text>
-        <Text style={{ fontWeight: '900', color: colors.primary, fontSize: 17 }}>{moeda(Number(p.total))}</Text>
+        {p.observacoes ? (
+          <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 4, fontStyle: 'italic' }}>Obs: {p.observacoes}</Text>
+        ) : null}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+          <Text style={{ color: colors.textSoft, fontSize: 13 }}>
+            {moeda(Number(p.subtotal))}{Number(p.taxa_entrega) > 0 ? ` + ${moeda(Number(p.taxa_entrega))} frete` : ''}
+          </Text>
+          <Text style={{ fontWeight: '900', color: colors.primary, fontSize: 17 }}>{moeda(Number(p.total))}</Text>
+        </View>
       </View>
 
       {ativo ? (
@@ -311,19 +342,16 @@ function PedidoCard({
           {proximo ? <Button title={proximo.label} onPress={() => onMudar(p, proximo.status)} /> : null}
           {p.forma_pagamento === 'pix' && !p.pago ? (
             <Button
-              title="Confirmar Pix recebido 💰"
+              title="Confirmar Pix recebido"
               variant="outline"
-              onPress={() =>
-                confirmar('Confirmar pagamento', `Marcar o Pix de ${p.nome_cliente} como recebido?`, () => onPagar(p))
-              }
+              onPress={() => onPagar(p)}
             />
           ) : null}
           <Button
             title="Cancelar pedido"
             variant="danger"
-            onPress={() =>
-              confirmar('Cancelar pedido', `Cancelar o pedido de ${p.nome_cliente}?`, () => onMudar(p, 'cancelado'))
-            }
+            style={{ backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.red }}
+            onPress={() => onMudar(p, 'cancelado')}
           />
         </View>
       ) : null}
@@ -349,7 +377,29 @@ function AbaCardapio() {
     load()
   }, [load])
 
+  const ultimaCarne = useRef<string | null>(null)
+
   const toggle = async (ing: Ingrediente) => {
+    if (ing.categoria === 'carne' && !ing.disponivel) {
+      const ligadas = itens.filter((x) => x.categoria === 'carne' && x.disponivel)
+      if (ligadas.length >= 2) {
+        const sai = ligadas.find((x) => x.id === ultimaCarne.current) || ligadas[ligadas.length - 1]
+        setItens((prev) =>
+          prev.map((x) =>
+            x.id === sai.id ? { ...x, disponivel: false } : x.id === ing.id ? { ...x, disponivel: true } : x,
+          ),
+        )
+        ultimaCarne.current = ing.id
+        try {
+          await setIngredienteDisponivel(sai.id, false)
+          await setIngredienteDisponivel(ing.id, true)
+        } catch {
+          load()
+        }
+        return
+      }
+      ultimaCarne.current = ing.id
+    }
     setItens((prev) => prev.map((x) => (x.id === ing.id ? { ...x, disponivel: !x.disponivel } : x)))
     try {
       await setIngredienteDisponivel(ing.id, !ing.disponivel)
@@ -369,15 +419,13 @@ function AbaCardapio() {
     setSalvando(false)
   }
 
-  const remover = (ing: Ingrediente) => {
-    confirmar('Remover ingrediente', `Remover "${ing.nome}" do cardápio de vez?`, async () => {
-      try {
-        await removeIngrediente(ing.id)
-        setItens((prev) => prev.filter((x) => x.id !== ing.id))
-      } catch {
-        load()
-      }
-    })
+  const remover = async (ing: Ingrediente) => {
+    try {
+      await removeIngrediente(ing.id)
+      setItens((prev) => prev.filter((x) => x.id !== ing.id))
+    } catch {
+      load()
+    }
   }
 
   if (loading) {
@@ -390,8 +438,8 @@ function AbaCardapio() {
 
   const disponiveis = itens.filter((i) => i.disponivel).length
   const grupos: { titulo: string; lista: Ingrediente[] }[] = [
-    { titulo: '🥩 Carnes (cliente escolhe 1)', lista: itens.filter((i) => i.categoria === 'carne') },
-    { titulo: '🥗 Acompanhamentos (todos inclusos)', lista: itens.filter((i) => i.categoria !== 'carne') },
+    { titulo: 'Carnes (cliente escolhe 1)', lista: itens.filter((i) => i.categoria === 'carne') },
+    { titulo: 'Acompanhamentos (todos inclusos)', lista: itens.filter((i) => i.categoria !== 'carne') },
   ]
 
   const linha = (ing: Ingrediente) => (
@@ -410,16 +458,11 @@ function AbaCardapio() {
         marginBottom: 8,
       }}
     >
-      <Text style={{ color: ing.disponivel ? colors.text : colors.textSoft, fontWeight: '600', flex: 1 }}>
+      <Text style={{ color: ing.disponivel ? colors.text : '#a8a29e', fontWeight: '600', flex: 1 }}>
         {ing.nome}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Switch
-          value={ing.disponivel}
-          onValueChange={() => toggle(ing)}
-          trackColor={{ true: colors.primary, false: '#d6d3d1' }}
-          thumbColor="#fff"
-        />
+        <Toggle value={ing.disponivel} onValueChange={() => toggle(ing)} activeColor={colors.primary} />
         <Pressable onPress={() => remover(ing)} hitSlop={10}>
           <Text style={{ color: colors.red, fontSize: 15 }}>✕</Text>
         </Pressable>
@@ -429,35 +472,14 @@ function AbaCardapio() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
-      <Text style={{ color: colors.textSoft, marginBottom: 14, fontSize: 13 }}>
-        Ligue os ingredientes disponíveis hoje. Os clientes só veem os que estão ativos ({disponiveis} no ar).
+      <Text style={{ fontWeight: '800', color: colors.text, fontSize: 15, marginBottom: 8 }}>
+        Escolha o que deseja adicionar
       </Text>
-
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-        <TextInput
-          value={novo}
-          onChangeText={setNovo}
-          placeholder="Novo ingrediente..."
-          placeholderTextColor={colors.textSoft}
-          style={{
-            flex: 1,
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 12,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            fontSize: 15,
-            color: colors.text,
-          }}
-        />
-        <Button title="+" onPress={adicionar} loading={salvando} style={{ paddingHorizontal: 20 }} />
-      </View>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 18 }}>
         {(
           [
-            { key: 'acompanhamento', label: '🥗 Acompanhamento' },
-            { key: 'carne', label: '🥩 Carne' },
+            { key: 'acompanhamento', label: 'Acompanhamento' },
+            { key: 'carne', label: 'Carne' },
           ] as { key: CategoriaIngrediente; label: string }[]
         ).map((c) => (
           <Pressable
@@ -477,6 +499,26 @@ function AbaCardapio() {
             </Text>
           </Pressable>
         ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+        <TextInput
+          value={novo}
+          onChangeText={setNovo}
+          placeholder="Nova opção..."
+          placeholderTextColor={colors.textSoft}
+          style={{
+            flex: 1,
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            fontSize: 15,
+            color: colors.text,
+          }}
+        />
+        <Button title="+" onPress={adicionar} loading={salvando} style={{ paddingHorizontal: 20 }} />
       </View>
 
       {grupos.map((g) => (
@@ -582,16 +624,8 @@ function AbaAjustes() {
           <Text style={{ fontWeight: '800', color: colors.text, fontSize: 15 }}>
             {config.aberto ? '🟢 Restaurante aberto' : '🔴 Restaurante fechado'}
           </Text>
-          <Text style={{ color: colors.textSoft, fontSize: 12, marginTop: 2 }}>
-            Fechado = clientes não conseguem enviar pedidos
-          </Text>
         </View>
-        <Switch
-          value={config.aberto}
-          onValueChange={alternarAberto}
-          trackColor={{ true: colors.green, false: '#d6d3d1' }}
-          thumbColor="#fff"
-        />
+        <Toggle value={config.aberto} onValueChange={alternarAberto} />
       </Card>
 
       <SectionTitle>Preços</SectionTitle>
@@ -610,7 +644,7 @@ function AbaAjustes() {
       <SectionTitle>Retirada</SectionTitle>
       {campo('Endereço do restaurante', 'endereco_retirada', 'default')}
 
-      <Button title={salvo ? '✓ Salvo!' : 'Salvar ajustes'} onPress={salvar} loading={salvando} disabled={!numerosOk} />
+      <Button title={salvo ? '✓ Salvo!' : 'Salvar configurações'} onPress={salvar} loading={salvando} disabled={!numerosOk} />
     </ScrollView>
   )
 }
