@@ -31,8 +31,6 @@ App de pedidos de marmita para um restaurante em Curitiba. O cliente monta a mar
 
 ## Banco de dados
 
-Schema completo em [`supabase/schema.sql`](supabase/schema.sql):
-
 | Tabela | Papel |
 |---|---|
 | `clientes` | nome, telefone (único) e endereço — atualizado a cada pedido |
@@ -50,4 +48,4 @@ cp .env.example .env   # preencha com seu projeto Supabase
 npm run web
 ```
 
-Aplique `supabase/schema.sql` no SQL Editor do seu projeto Supabase e crie um usuário para a equipe em Authentication.
+Configure um projeto Supabase com as tabelas acima, as RPCs `security definer` e um usuário para a equipe em Authentication.
