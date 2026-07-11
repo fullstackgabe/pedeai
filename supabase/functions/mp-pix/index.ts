@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
     if (pedido.forma_pagamento !== 'pix') return json({ error: 'pedido não é pix' }, 400)
     if (pedido.pago) return json({ pago: true, qr_code: pedido.pix_copia_cola })
 
-    // credenciais de teste: "confirmar pagamento" simula a aprovação (em produção este atalho não existe)
     if (confirmar && token.startsWith('TEST-')) {
       await supabase.from('pedidos').update({ pago: true }).eq('id', pedido_id)
       return json({ pago: true, qr_code: pedido.pix_copia_cola })

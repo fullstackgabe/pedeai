@@ -1,4 +1,3 @@
--- PedeAí — schema inicial
 create table public.clientes (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
@@ -52,24 +51,21 @@ create table public.pedidos (
 create index pedidos_status_idx on public.pedidos (status);
 create index pedidos_created_idx on public.pedidos (created_at desc);
 
--- RLS
 alter table public.clientes enable row level security;
 alter table public.ingredientes enable row level security;
 alter table public.config enable row level security;
 alter table public.pedidos enable row level security;
 
--- cardápio e config são públicos (sem PII)
 create policy ingredientes_select_public on public.ingredientes for select using (true);
 create policy config_select_public on public.config for select using (true);
 
--- atendente (autenticada) gerencia tudo
 create policy clientes_all_auth on public.clientes for all to authenticated using (true) with check (true);
 create policy pedidos_select_auth on public.pedidos for select to authenticated using (true);
 create policy pedidos_update_auth on public.pedidos for update to authenticated using (true) with check (true);
+create policy pedidos_delete_auth on public.pedidos for delete to authenticated using (true);
 create policy ingredientes_all_auth on public.ingredientes for all to authenticated using (true) with check (true);
 create policy config_update_auth on public.config for update to authenticated using (true) with check (true);
 
--- cliente anônimo NÃO acessa tabelas direto: usa RPCs security definer
 create or replace function public.criar_pedido(
   p_nome text,
   p_telefone text,
@@ -134,7 +130,6 @@ as $$
   select status, tipo, forma_pagamento, total, created_at, pago, pix_copia_cola, itens from pedidos where id = p_id;
 $$;
 
--- cliente pode cancelar só enquanto o pedido não foi confirmado
 create or replace function public.cancelar_pedido(p_id uuid)
 returns boolean
 language plpgsql security definer set search_path = public
@@ -145,17 +140,27 @@ begin
 end;
 $$;
 
+create or replace function public.receber_pedido(p_id uuid)
+returns boolean
+language plpgsql security definer set search_path = public
+as $$
+begin
+  update pedidos set status = 'concluido' where id = p_id and status = 'saiu_entrega';
+  return found;
+end;
+$$;
+
 revoke all on function public.criar_pedido from public;
 revoke all on function public.status_pedido from public;
 revoke all on function public.cancelar_pedido from public;
+revoke all on function public.receber_pedido from public;
 grant execute on function public.criar_pedido to anon, authenticated;
 grant execute on function public.status_pedido to anon, authenticated;
 grant execute on function public.cancelar_pedido to anon, authenticated;
+grant execute on function public.receber_pedido to anon, authenticated;
 
--- realtime para a atendente acompanhar pedidos novos
 alter publication supabase_realtime add table public.pedidos;
 
--- seed do cardápio
 insert into public.ingredientes (nome, disponivel, categoria) values
   ('Frango à parmegiana', true, 'carne'),
   ('Peixe à milanesa', true, 'carne'),
