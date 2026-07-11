@@ -38,3 +38,6 @@ android/.gradle/
 # Vercel
 .vercel
 .env*
+
+# Supabase CLI
+supabase/.temp/
