@@ -54,6 +54,33 @@ export default function Home() {
       />
 
       <View style={{ flex: 1, padding: 24, paddingTop: 26 }}>
+        {config ? (
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: config.aberto ? colors.greenSoft : colors.redSoft,
+              borderRadius: 999,
+              paddingHorizontal: 12,
+              paddingVertical: 5,
+              marginBottom: 12,
+            }}
+          >
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: config.aberto ? colors.green : colors.red,
+                marginRight: 6,
+              }}
+            />
+            <Text style={{ color: config.aberto ? colors.green : colors.red, fontWeight: '800', fontSize: 12 }}>
+              {config.aberto ? 'Aberto agora' : 'Fechado no momento'}
+            </Text>
+          </View>
+        ) : null}
         <Text style={{ fontSize: 30, fontWeight: '900', color: colors.text, lineHeight: 36 }}>
           Marmita caseira
         </Text>
@@ -64,14 +91,15 @@ export default function Home() {
         <View style={{ flex: 1 }} />
 
         {config && !config.aberto ? (
-          <Text style={{ color: colors.red, fontWeight: '700', fontSize: 13, textAlign: 'center', marginTop: 18 }}>
-            🔴 Estamos fechados no momento
+          <Text style={{ color: colors.textSoft, fontSize: 13, textAlign: 'center', marginTop: 18 }}>
+            Estamos fechados agora — volte mais tarde pra fazer seu pedido. 😴
           </Text>
         ) : null}
 
         <Button
           title="Fazer meu pedido  →"
           onPress={() => router.push('/dados')}
+          disabled={!!config && !config.aberto}
           style={{ marginTop: 20, paddingVertical: 16 }}
         />
       </View>

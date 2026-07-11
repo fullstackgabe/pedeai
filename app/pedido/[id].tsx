@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Animated, Easing, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import QRCode from 'react-native-qrcode-svg'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { colors, moeda } from '@/theme'
-import { cancelarPedido, cobrancaPix, fetchConfig, statusPedido } from '@/lib/repo'
+import { cancelarPedido, cobrancaPix, fetchConfig, receberPedido, statusPedido } from '@/lib/repo'
 import { clearPedidoAtivo, savePedidoAtivo } from '@/lib/storage'
 import { pixCopiaECola } from '@/lib/pix'
 import { Button, Card } from '@/components/ui'
@@ -32,22 +32,11 @@ const FRASES: Partial<Record<StatusPedido, string>> = {
   confirmado: 'Pedido confirmado! Já já vai pra panela. 🍳',
   em_preparo: 'Capricho no fogão! Sua marmita está sendo preparada com carinho. 🧑‍🍳',
   saiu_entrega: 'O motoboy já saiu! Fica de olho no portão. 🛵',
-  pronto_retirada: 'Prontinho! Sua marmita tá quentinha te esperando. 🍱',
+  pronto_retirada: 'Prontinho! Sua marmita já tá quentinha aqui te esperando. 🍱',
   concluido: 'Pedido finalizado. Bom apetite! 😋',
 }
 
 const PIX_LIMITE_MS = 10 * 60 * 1000
-
-const confirmarAcao = (titulo: string, msg: string, onOk: () => void) => {
-  if (Platform.OS === 'web') {
-    if (typeof window !== 'undefined' && window.confirm(`${titulo}\n\n${msg}`)) onOk()
-  } else {
-    Alert.alert(titulo, msg, [
-      { text: 'Voltar', style: 'cancel' },
-      { text: 'Confirmar', style: 'destructive', onPress: onOk },
-    ])
-  }
-}
 
 export default function AcompanharPedido() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -59,9 +48,9 @@ export default function AcompanharPedido() {
   const [mpQr, setMpQr] = useState<string | null>(null)
   const [naoEncontrado, setNaoEncontrado] = useState(false)
   const [copiado, setCopiado] = useState(false)
-  const [copiadoEnd, setCopiadoEnd] = useState(false)
   const [verificando, setVerificando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
+  const [recebendo, setRecebendo] = useState(false)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
   const cobrancaPedida = useRef(false)
   const ativoRef = useRef(true)
@@ -217,17 +206,6 @@ export default function AcompanharPedido() {
     setTimeout(() => setCopiado(false), 2500)
   }
 
-  const copiarEndereco = async () => {
-    if (!config?.endereco_retirada) return
-    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(config.endereco_retirada)
-    } else {
-      await Clipboard.setStringAsync(config.endereco_retirada)
-    }
-    setCopiadoEnd(true)
-    setTimeout(() => setCopiadoEnd(false), 2500)
-  }
-
   const verificarPagamento = async () => {
     setVerificando(true)
     await cobrancaPix(String(id), true)
@@ -235,17 +213,15 @@ export default function AcompanharPedido() {
     setVerificando(false)
   }
 
-  const cancelar = () => {
-    confirmarAcao('Cancelar pedido', 'Tem certeza que deseja cancelar seu pedido?', async () => {
-      setCancelando(true)
-      try {
-        await cancelarPedido(String(id))
-        ativoRef.current = false
-        clearPedidoAtivo()
-        await load()
-      } catch {}
-      setCancelando(false)
-    })
+  const cancelar = async () => {
+    setCancelando(true)
+    try {
+      await cancelarPedido(String(id))
+      ativoRef.current = false
+      clearPedidoAtivo()
+      await load()
+    } catch {}
+    setCancelando(false)
   }
 
   if (pixPendente && pix) {
@@ -285,8 +261,11 @@ export default function AcompanharPedido() {
           <Text style={{ fontWeight: '900', color: colors.text, fontSize: 18, marginBottom: 4 }}>
             💠 Pague com Pix
           </Text>
-          <Text style={{ color: colors.textSoft, fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
+          <Text style={{ color: colors.textSoft, fontSize: 13, textAlign: 'center', marginBottom: 4 }}>
             Escaneie o QR Code ou copie o código abaixo
+          </Text>
+          <Text style={{ color: '#b45309', fontSize: 12, fontWeight: '700', textAlign: 'center', marginBottom: 12 }}>
+            Você tem {restanteFmt} pra confirmar o pagamento
           </Text>
           <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
             <QRCode value={pix} size={190} />
@@ -434,21 +413,43 @@ export default function AcompanharPedido() {
         />
       ) : null}
 
+      {resumo.status === 'saiu_entrega' ? (
+        <Button
+          title="Recebi meu pedido ✓"
+          loading={recebendo}
+          onPress={async () => {
+            setRecebendo(true)
+            try {
+              await receberPedido(String(id))
+              ativoRef.current = false
+              clearPedidoAtivo()
+              await load()
+            } catch {}
+            setRecebendo(false)
+          }}
+          style={{ marginBottom: 14 }}
+        />
+      ) : null}
+
       {resumo.tipo === 'retirada' && !cancelado && config?.endereco_retirada ? (
         <Pressable
-          onPress={copiarEndereco}
-          hitSlop={6}
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}
+          onPress={() =>
+            Linking.openURL(
+              'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(config.endereco_retirada),
+            )
+          }
+          style={({ pressed }) => ({
+            backgroundColor: colors.blueSoft,
+            borderWidth: 1.5,
+            borderColor: colors.blue,
+            borderRadius: 14,
+            paddingVertical: 14,
+            alignItems: 'center',
+            marginBottom: 14,
+            opacity: pressed ? 0.85 : 1,
+          })}
         >
-          <Text numberOfLines={1} style={{ color: colors.textSoft, fontSize: 12, flexShrink: 1 }}>
-            📍 {config.endereco_retirada}
-          </Text>
-          <Text style={{ fontSize: 15, marginLeft: 6, color: copiadoEnd ? colors.green : colors.primary, fontWeight: '700' }}>
-            {copiadoEnd ? '✓' : '⧉'}
-          </Text>
-          {copiadoEnd ? (
-            <Text style={{ color: colors.green, fontSize: 12, fontWeight: '700', marginLeft: 4 }}>Copiado!</Text>
-          ) : null}
+          <Text style={{ color: colors.blue, fontWeight: '700', fontSize: 16 }}>Ir para o endereço  →</Text>
         </Pressable>
       ) : null}
 

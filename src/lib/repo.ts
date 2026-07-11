@@ -77,6 +77,12 @@ export async function cancelarPedido(id: string): Promise<boolean> {
   return !!data
 }
 
+export async function receberPedido(id: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('receber_pedido', { p_id: id })
+  if (error) throw error
+  return !!data
+}
+
 export async function fetchPedidos(): Promise<Pedido[]> {
   const { data, error } = await supabase
     .from('pedidos')
@@ -94,6 +100,11 @@ export async function atualizarStatus(id: string, status: StatusPedido) {
 
 export async function marcarPago(id: string) {
   const { error } = await supabase.from('pedidos').update({ pago: true }).eq('id', id)
+  if (error) throw error
+}
+
+export async function limparPedidos() {
+  const { error } = await supabase.from('pedidos').delete().in('status', ['concluido', 'cancelado'])
   if (error) throw error
 }
 

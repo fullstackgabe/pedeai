@@ -110,12 +110,12 @@ export default function Montar() {
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 22, fontWeight: '900', color: ativo ? '#fff' : colors.primary }}>{t.key}</Text>
-              <Text style={{ fontWeight: '700', color: ativo ? '#fff' : colors.text, fontSize: 13 }}>{t.label}</Text>
-              <Text style={{ color: ativo ? '#ffedd5' : colors.textSoft, fontSize: 12, marginTop: 2 }}>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: ativo ? '#fff' : colors.primary }}>{t.key}</Text>
+              <Text style={{ fontWeight: '700', color: ativo ? '#fff' : colors.text, fontSize: 12 }}>{t.label}</Text>
+              <Text style={{ color: ativo ? '#ffedd5' : colors.textSoft, fontSize: 11, marginTop: 2 }}>
                 {config ? moeda(precoTamanho(config, t.key)) : '—'}
               </Text>
-              <Text style={{ color: ativo ? '#ffedd5' : colors.textSoft, fontSize: 11 }}>{t.hint}</Text>
+              <Text style={{ color: ativo ? '#ffedd5' : colors.textSoft, fontSize: 10 }}>{t.hint}</Text>
             </Pressable>
           )
         })}
@@ -148,9 +148,9 @@ export default function Montar() {
               >
                 <View
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 11,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
                     borderWidth: 2,
                     borderColor: ativo ? colors.primary : colors.border,
                     alignItems: 'center',
@@ -160,10 +160,10 @@ export default function Montar() {
                   }}
                 >
                   {ativo ? (
-                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary }} />
+                    <View style={{ width: 11, height: 11, borderRadius: 5.5, backgroundColor: colors.primary }} />
                   ) : null}
                 </View>
-                <Text style={{ color: ativo ? colors.primaryDark : colors.text, fontWeight: '700', fontSize: 15 }}>
+                <Text style={{ color: ativo ? colors.primaryDark : colors.text, fontWeight: '700', fontSize: 14 }}>
                   {c.nome}
                 </Text>
               </Pressable>
@@ -202,7 +202,7 @@ export default function Montar() {
                   style={{
                     color: ativo ? colors.primaryDark : colors.textSoft,
                     fontWeight: ativo ? '700' : '500',
-                    fontSize: 14,
+                    fontSize: 13,
                     textDecorationLine: ativo ? 'none' : 'line-through',
                   }}
                 >
@@ -237,7 +237,7 @@ export default function Montar() {
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontWeight: '800', color: ativo ? colors.primaryDark : colors.textSoft, fontSize: 15 }}>
+              <Text style={{ fontWeight: '800', color: ativo ? colors.primaryDark : colors.textSoft, fontSize: 14 }}>
                 {op.label}
               </Text>
             </Pressable>
@@ -246,30 +246,35 @@ export default function Montar() {
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-        <Text style={{ fontWeight: '700', color: colors.text, fontSize: 15 }}>Quantidade</Text>
+        <Text style={{ fontWeight: '700', color: colors.text, fontSize: 14 }}>Quantidade</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Pressable
             onPress={() => setQtd((q) => Math.max(1, q - 1))}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 20, fontWeight: '800', color: colors.primaryDark }}>−</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.primaryDark }}>−</Text>
           </Pressable>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text, minWidth: 24, textAlign: 'center' }}>{qtd}</Text>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, minWidth: 24, textAlign: 'center' }}>{qtd}</Text>
           <Pressable
             onPress={() => setQtd((q) => Math.min(20, q + 1))}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 20, fontWeight: '800', color: colors.primaryDark }}>+</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.primaryDark }}>+</Text>
           </Pressable>
         </View>
       </View>
 
+      {config ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Text style={{ fontWeight: '700', color: colors.text, fontSize: 14 }}>Total</Text>
+          <Text style={{ fontWeight: '900', color: colors.primary, fontSize: 17 }}>
+            {moeda(precoTamanho(config, tamanho) * qtd)}
+          </Text>
+        </View>
+      ) : null}
+
       <Button
-        title={
-          config
-            ? `${itens.length > 0 ? 'Adicionar e revisar' : 'Iniciar pedido'} · ${moeda(precoTamanho(config, tamanho) * qtd)}  →`
-            : 'Iniciar pedido  →'
-        }
+        title={itens.length > 0 ? 'Adicionar e revisar  →' : 'Iniciar pedido  →'}
         onPress={enviar}
         disabled={!config || !config.aberto || !carneId}
       />

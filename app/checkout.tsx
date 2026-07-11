@@ -11,8 +11,8 @@ import type { Config, FormaPagamento, TipoPedido } from '@/types'
 
 const PAGAMENTOS: { key: FormaPagamento; label: string; hint: string; tipos: TipoPedido[] }[] = [
   { key: 'pix', label: '💠 Pix', hint: 'pagar pelo app', tipos: ['entrega'] },
-  { key: 'dinheiro', label: '💵 Dinheiro', hint: 'pagar na retirada', tipos: ['retirada'] },
   { key: 'cartao', label: '💳 Cartão', hint: 'pagar na retirada', tipos: ['retirada'] },
+  { key: 'dinheiro', label: '💵 Dinheiro', hint: 'pagar na retirada', tipos: ['retirada'] },
 ]
 
 export default function Checkout() {
@@ -21,8 +21,8 @@ export default function Checkout() {
 
   const [config, setConfig] = useState<Config | null>(null)
   const [cliente, setCliente] = useState<ClienteCache | null>(null)
-  const [tipo, setTipo] = useState<TipoPedido>('entrega')
-  const [pagamento, setPagamento] = useState<FormaPagamento>('pix')
+  const [tipo, setTipo] = useState<TipoPedido>('retirada')
+  const [pagamento, setPagamento] = useState<FormaPagamento>('cartao')
   const [obs, setObs] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -127,25 +127,13 @@ export default function Checkout() {
         style={{ marginBottom: 16 }}
       />
 
-      {cliente ? (
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontWeight: '800', color: colors.text, fontSize: 15 }}>{cliente.nome}</Text>
-            <Pressable onPress={() => router.push('/dados?voltar=checkout')} hitSlop={8}>
-              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>Trocar</Text>
-            </Pressable>
-          </View>
-          <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 4 }}>{cliente.telefone}</Text>
-          <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 2 }}>{cliente.endereco}</Text>
-        </Card>
-      ) : null}
 
       <SectionTitle>Entrega ou retirada?</SectionTitle>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
         {(
           [
-            { key: 'entrega', label: 'Entrega', hint: config ? `+ ${moeda(Number(config.taxa_entrega))}` : '' },
             { key: 'retirada', label: 'Retirada', hint: 'sem taxa' },
+            { key: 'entrega', label: 'Entrega', hint: config ? `+ ${moeda(Number(config.taxa_entrega))}` : '' },
           ] as { key: TipoPedido; label: string; hint: string }[]
         ).map((op) => {
           const ativo = tipo === op.key
@@ -154,7 +142,7 @@ export default function Checkout() {
               key={op.key}
               onPress={() => {
                 setTipo(op.key)
-                setPagamento(op.key === 'entrega' ? 'pix' : 'dinheiro')
+                setPagamento(op.key === 'entrega' ? 'pix' : 'cartao')
               }}
               style={{
                 flex: 1,
@@ -194,6 +182,22 @@ export default function Checkout() {
         </Pressable>
       ) : null}
 
+      {cliente ? (
+        <>
+        <SectionTitle>Seus dados</SectionTitle>
+        <Card>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontWeight: '800', color: colors.text, fontSize: 15 }}>{cliente.nome}</Text>
+            <Pressable onPress={() => router.push('/dados?voltar=checkout')} hitSlop={8}>
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>Trocar</Text>
+            </Pressable>
+          </View>
+          <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 4 }}>{cliente.telefone}</Text>
+          <Text style={{ color: colors.textSoft, fontSize: 13, marginTop: 2 }}>{cliente.endereco}</Text>
+        </Card>
+        </>
+      ) : null}
+
       <SectionTitle>Pagamento</SectionTitle>
       <View style={{ gap: 8, marginBottom: 14 }}>
         {PAGAMENTOS.filter((op) => op.tipos.includes(tipo)).map((op) => {
@@ -221,9 +225,15 @@ export default function Checkout() {
         })}
       </View>
 
-      <Text style={{ color: colors.textSoft, fontSize: 12, marginTop: -6, marginBottom: 14 }}>
-        ⚠️ Não aceitamos vale-refeição nem vale-alimentação.
-      </Text>
+      {tipo === 'retirada' ? (
+        <Text style={{ color: colors.textSoft, fontSize: 12, marginTop: -6, marginBottom: 14 }}>
+          ⚠️ Não aceitamos vale-refeição nem vale-alimentação.
+        </Text>
+      ) : (
+        <Text style={{ color: colors.textSoft, fontSize: 12, marginTop: -6, marginBottom: 14 }}>
+          ⚠️ O pedido é cancelado se não pagar dentro de 10 minutos.
+        </Text>
+      )}
 
       <Field label="Observações (opcional)" value={obs} onChangeText={setObs} placeholder="Ex: sem cebola, troco para R$ 50..." multiline />
 
@@ -247,7 +257,7 @@ export default function Checkout() {
       {erro ? <Text style={{ color: colors.red, fontWeight: '600', marginBottom: 10 }}>{erro}</Text> : null}
 
       <Button
-        title="Confirmar pedido ✓"
+        title="Enviar pedido  →"
         onPress={enviar}
         disabled={!valido}
         loading={enviando}

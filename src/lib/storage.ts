@@ -23,12 +23,6 @@ export async function saveCliente(c: ClienteCache) {
   } catch {}
 }
 
-export async function clearCliente() {
-  try {
-    await AsyncStorage.removeItem(KEY)
-  } catch {}
-}
-
 const KEY_PEDIDO = 'pedeai:pedido-ativo'
 
 export async function loadPedidoAtivo(): Promise<string | null> {
