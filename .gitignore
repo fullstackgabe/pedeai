@@ -41,3 +41,6 @@ android/.gradle/
 
 # Supabase CLI
 supabase/.temp/
+
+# Backend privado
+supabase/
