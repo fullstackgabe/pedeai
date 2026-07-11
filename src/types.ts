@@ -17,6 +17,7 @@ export type Config = {
   chave_pix: string
   nome_pix: string
   cidade_pix: string
+  endereco_retirada: string
   aberto: boolean
 }
 
@@ -31,6 +32,7 @@ export type FormaPagamento = 'pix' | 'dinheiro' | 'cartao'
 
 export type StatusPedido =
   | 'novo'
+  | 'confirmado'
   | 'em_preparo'
   | 'saiu_entrega'
   | 'pronto_retirada'
@@ -65,4 +67,5 @@ export type StatusResumo = {
   created_at: string
   pago: boolean
   pix_copia_cola: string | null
+  itens: ItemPedido[]
 }

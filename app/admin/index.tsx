@@ -16,12 +16,14 @@ import {
   setIngredienteDisponivel,
 } from '@/lib/repo'
 import { Badge, Button, Card, SectionTitle } from '@/components/ui'
+import { Logo } from '@/components/Logo'
 import type { CategoriaIngrediente, Config, Ingrediente, Pedido, StatusPedido } from '@/types'
 
 type Aba = 'pedidos' | 'cardapio' | 'ajustes'
 
 const STATUS_LABEL: Record<StatusPedido, string> = {
   novo: '🔔 Novo',
+  confirmado: '👍 Confirmado',
   em_preparo: '👨‍🍳 Em preparo',
   saiu_entrega: '🛵 Saiu p/ entrega',
   pronto_retirada: '🛍️ Pronto p/ retirada',
@@ -72,7 +74,10 @@ export default function Admin() {
         }}
       >
         <View>
-          <Text style={{ fontSize: 19, fontWeight: '900', color: colors.primary }}>🍱 PedeAí · Gestão</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Logo iconSize={22} textSize={18} />
+            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textSoft }}>· Gestão</Text>
+          </View>
           <Text style={{ color: colors.textSoft, fontSize: 12 }}>{session.user?.email}</Text>
         </View>
         <Pressable
@@ -221,14 +226,16 @@ function PedidoCard({
 
   const proximo: { status: StatusPedido; label: string } | null =
     p.status === 'novo'
-      ? { status: 'em_preparo', label: 'Iniciar preparo 👨‍🍳' }
-      : p.status === 'em_preparo'
-        ? p.tipo === 'entrega'
-          ? { status: 'saiu_entrega', label: 'Saiu com o motoboy 🛵' }
-          : { status: 'pronto_retirada', label: 'Pronto p/ retirada 🛍️' }
-        : p.status === 'saiu_entrega' || p.status === 'pronto_retirada'
-          ? { status: 'concluido', label: 'Concluir ✅' }
-          : null
+      ? { status: 'confirmado', label: 'Confirmar pedido 👍' }
+      : p.status === 'confirmado'
+        ? { status: 'em_preparo', label: 'Iniciar preparo 👨‍🍳' }
+        : p.status === 'em_preparo'
+          ? p.tipo === 'entrega'
+            ? { status: 'saiu_entrega', label: 'Saiu com o motoboy 🛵' }
+            : { status: 'pronto_retirada', label: 'Pronto p/ retirada 🛍️' }
+          : p.status === 'saiu_entrega' || p.status === 'pronto_retirada'
+            ? { status: 'concluido', label: 'Concluir ✅' }
+            : null
 
   const whatsapp = () => {
     const num = '55' + p.telefone.replace(/\D/g, '')
@@ -488,7 +495,7 @@ function AbaCardapio() {
 
 function AbaAjustes() {
   const [config, setConfig] = useState<Config | null>(null)
-  const [form, setForm] = useState({ preco_p: '', preco_m: '', preco_g: '', taxa_entrega: '', chave_pix: '', nome_pix: '', cidade_pix: '' })
+  const [form, setForm] = useState({ preco_p: '', preco_m: '', preco_g: '', taxa_entrega: '', chave_pix: '', nome_pix: '', cidade_pix: '', endereco_retirada: '' })
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
 
@@ -503,6 +510,7 @@ function AbaAjustes() {
         chave_pix: c.chave_pix,
         nome_pix: c.nome_pix,
         cidade_pix: c.cidade_pix,
+        endereco_retirada: c.endereco_retirada,
       })
     })
   }, [])
@@ -530,6 +538,7 @@ function AbaAjustes() {
         chave_pix: form.chave_pix.trim(),
         nome_pix: form.nome_pix.trim(),
         cidade_pix: form.cidade_pix.trim(),
+        endereco_retirada: form.endereco_retirada.trim(),
       })
       setSalvo(true)
       setTimeout(() => setSalvo(false), 2500)
@@ -597,6 +606,9 @@ function AbaAjustes() {
       {campo('Chave Pix', 'chave_pix', 'default')}
       {campo('Nome do recebedor', 'nome_pix', 'default')}
       {campo('Cidade', 'cidade_pix', 'default')}
+
+      <SectionTitle>Retirada</SectionTitle>
+      {campo('Endereço do restaurante', 'endereco_retirada', 'default')}
 
       <Button title={salvo ? '✓ Salvo!' : 'Salvar ajustes'} onPress={salvar} loading={salvando} disabled={!numerosOk} />
     </ScrollView>

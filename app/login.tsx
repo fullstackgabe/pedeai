@@ -55,9 +55,6 @@ export default function Login() {
           loading={entrando}
           disabled={!email.includes('@') || senha.length < 6}
         />
-        <Text style={{ color: colors.textSoft, fontSize: 12, textAlign: 'center', marginTop: 14 }}>
-          Acesso de demonstração: demo@demo.com · demo1234
-        </Text>
       </Card>
     </ScrollView>
   )

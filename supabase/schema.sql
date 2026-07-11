@@ -25,6 +25,7 @@ create table public.config (
   chave_pix text not null default 'pedeai@demo.com.br',
   nome_pix text not null default 'Restaurante PedeAi',
   cidade_pix text not null default 'Curitiba',
+  endereco_retirada text not null default 'Rua XV de Novembro, 1500 - Centro, Curitiba - PR',
   aberto boolean not null default true
 );
 insert into public.config (id) values (1);
@@ -41,7 +42,7 @@ create table public.pedidos (
   subtotal numeric not null,
   taxa_entrega numeric not null default 0,
   total numeric not null,
-  status text not null default 'novo' check (status in ('novo','em_preparo','saiu_entrega','pronto_retirada','concluido','cancelado')),
+  status text not null default 'novo' check (status in ('novo','confirmado','em_preparo','saiu_entrega','pronto_retirada','concluido','cancelado')),
   observacoes text,
   pago boolean not null default false,
   mp_payment_id text,
@@ -127,36 +128,49 @@ end;
 $$;
 
 create or replace function public.status_pedido(p_id uuid)
-returns table (status text, tipo text, forma_pagamento text, total numeric, created_at timestamptz, pago boolean, pix_copia_cola text)
+returns table (status text, tipo text, forma_pagamento text, total numeric, created_at timestamptz, pago boolean, pix_copia_cola text, itens jsonb)
 language sql security definer set search_path = public stable
 as $$
-  select status, tipo, forma_pagamento, total, created_at, pago, pix_copia_cola from pedidos where id = p_id;
+  select status, tipo, forma_pagamento, total, created_at, pago, pix_copia_cola, itens from pedidos where id = p_id;
+$$;
+
+-- cliente pode cancelar só enquanto o pedido não foi confirmado
+create or replace function public.cancelar_pedido(p_id uuid)
+returns boolean
+language plpgsql security definer set search_path = public
+as $$
+begin
+  update pedidos set status = 'cancelado' where id = p_id and status = 'novo';
+  return found;
+end;
 $$;
 
 revoke all on function public.criar_pedido from public;
 revoke all on function public.status_pedido from public;
+revoke all on function public.cancelar_pedido from public;
 grant execute on function public.criar_pedido to anon, authenticated;
 grant execute on function public.status_pedido to anon, authenticated;
+grant execute on function public.cancelar_pedido to anon, authenticated;
 
 -- realtime para a atendente acompanhar pedidos novos
 alter publication supabase_realtime add table public.pedidos;
 
 -- seed do cardápio
 insert into public.ingredientes (nome, disponivel, categoria) values
-  ('Arroz branco', true, 'acompanhamento'),
-  ('Arroz integral', true, 'acompanhamento'),
-  ('Feijão carioca', true, 'acompanhamento'),
-  ('Feijão preto', true, 'acompanhamento'),
   ('Frango à parmegiana', true, 'carne'),
-  ('Carne de panela', true, 'carne'),
-  ('Strogonoff de frango', false, 'carne'),
+  ('Peixe à milanesa', true, 'carne'),
+  ('Carne de panela', false, 'carne'),
+  ('Strogonoff de carne', false, 'carne'),
   ('Bisteca suína', false, 'carne'),
-  ('Peixe frito', false, 'carne'),
+  ('Arroz branco', true, 'acompanhamento'),
+  ('Feijão preto', true, 'acompanhamento'),
   ('Macarrão ao alho e óleo', true, 'acompanhamento'),
-  ('Farofa', true, 'acompanhamento'),
-  ('Batata frita', true, 'acompanhamento'),
-  ('Purê de batata', false, 'acompanhamento'),
-  ('Ovo frito', true, 'acompanhamento'),
-  ('Salada verde', true, 'acompanhamento'),
   ('Legumes refogados', true, 'acompanhamento'),
+  ('Batata frita', true, 'acompanhamento'),
+  ('Arroz integral', false, 'acompanhamento'),
+  ('Feijão carioca', false, 'acompanhamento'),
+  ('Farofa', false, 'acompanhamento'),
+  ('Purê de batata', false, 'acompanhamento'),
+  ('Ovo frito', false, 'acompanhamento'),
+  ('Salada verde', false, 'acompanhamento'),
   ('Banana à milanesa', false, 'acompanhamento');

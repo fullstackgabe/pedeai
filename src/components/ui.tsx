@@ -58,6 +58,7 @@ export function Field({
   secureTextEntry,
   multiline,
   autoCapitalize,
+  labelRight,
 }: {
   label: string
   value: string
@@ -67,12 +68,14 @@ export function Field({
   secureTextEntry?: boolean
   multiline?: boolean
   autoCapitalize?: 'none' | 'sentences' | 'words'
+  labelRight?: ReactNode
 }) {
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text style={{ fontWeight: '600', color: colors.text, marginBottom: 6, fontSize: 14 }}>
-        {label}
-      </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <Text style={{ fontWeight: '600', color: colors.text, fontSize: 14 }}>{label}</Text>
+        {labelRight}
+      </View>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -121,7 +124,7 @@ export function Card({ children, style }: { children: ReactNode; style?: ViewSty
 
 export function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 10, marginTop: 4 }}>
+    <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, marginBottom: 7, marginTop: 2 }}>
       {children}
     </Text>
   )

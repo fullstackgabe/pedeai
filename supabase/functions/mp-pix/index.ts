@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    const { pedido_id } = await req.json()
+    const { pedido_id, confirmar } = await req.json()
     if (!pedido_id) return json({ error: 'pedido_id obrigatório' }, 400)
 
     const token = Deno.env.get('MP_ACCESS_TOKEN')
@@ -34,6 +34,12 @@ Deno.serve(async (req) => {
     if (error || !pedido) return json({ error: 'pedido não encontrado' }, 404)
     if (pedido.forma_pagamento !== 'pix') return json({ error: 'pedido não é pix' }, 400)
     if (pedido.pago) return json({ pago: true, qr_code: pedido.pix_copia_cola })
+
+    // credenciais de teste: "confirmar pagamento" simula a aprovação (em produção este atalho não existe)
+    if (confirmar && token.startsWith('TEST-')) {
+      await supabase.from('pedidos').update({ pago: true }).eq('id', pedido_id)
+      return json({ pago: true, qr_code: pedido.pix_copia_cola })
+    }
 
     if (pedido.mp_payment_id) {
       const r = await fetch(`https://api.mercadopago.com/v1/payments/${pedido.mp_payment_id}`, {

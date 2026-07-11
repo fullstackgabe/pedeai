@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router'
+import { router, Stack } from 'expo-router'
 import { Platform, SafeAreaView } from 'react-native'
 import { AuthProvider } from '@/lib/auth'
 import { CartProvider } from '@/lib/cart'
@@ -17,6 +17,13 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
   document.head.appendChild(s)
 }
 
+const VOLTAR_PARA: Record<string, string> = {
+  dados: '/',
+  montar: '/dados',
+  checkout: '/montar',
+  login: '/',
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff7ed' }}>
@@ -24,11 +31,17 @@ export default function RootLayout() {
         <CartProvider>
           <Stack
             screenOptions={{
-              header: ({ options, navigation, back }) => (
+              header: ({ options, navigation, back, route }) => (
                 <StackHeader
                   title={typeof options.title === 'string' ? options.title : ''}
-                  canGoBack={!!back}
-                  onBack={() => navigation.goBack()}
+                  canGoBack={route.name !== 'pedido/[id]' && (!!back || route.name in VOLTAR_PARA)}
+                  onBack={() => {
+                    if (back) {
+                      navigation.goBack()
+                    } else {
+                      router.replace((VOLTAR_PARA[route.name] || '/') as any)
+                    }
+                  }}
                 />
               ),
             }}

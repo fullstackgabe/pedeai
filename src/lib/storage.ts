@@ -22,3 +22,31 @@ export async function saveCliente(c: ClienteCache) {
     await AsyncStorage.setItem(KEY, JSON.stringify(c))
   } catch {}
 }
+
+export async function clearCliente() {
+  try {
+    await AsyncStorage.removeItem(KEY)
+  } catch {}
+}
+
+const KEY_PEDIDO = 'pedeai:pedido-ativo'
+
+export async function loadPedidoAtivo(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(KEY_PEDIDO)
+  } catch {
+    return null
+  }
+}
+
+export async function savePedidoAtivo(id: string) {
+  try {
+    await AsyncStorage.setItem(KEY_PEDIDO, id)
+  } catch {}
+}
+
+export async function clearPedidoAtivo() {
+  try {
+    await AsyncStorage.removeItem(KEY_PEDIDO)
+  } catch {}
+}

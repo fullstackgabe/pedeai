@@ -58,16 +58,23 @@ export async function statusPedido(id: string): Promise<StatusResumo | null> {
 
 export async function cobrancaPix(
   pedidoId: string,
+  confirmar = false,
 ): Promise<{ pago?: boolean; qr_code?: string } | null> {
   try {
     const { data, error } = await supabase.functions.invoke('mp-pix', {
-      body: { pedido_id: pedidoId },
+      body: { pedido_id: pedidoId, confirmar },
     })
     if (error) return null
     return data as { pago?: boolean; qr_code?: string }
   } catch {
     return null
   }
+}
+
+export async function cancelarPedido(id: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('cancelar_pedido', { p_id: id })
+  if (error) throw error
+  return !!data
 }
 
 export async function fetchPedidos(): Promise<Pedido[]> {
