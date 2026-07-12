@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Platform, Pressable, ScrollView, Text } from 'react-native'
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Location from 'expo-location'
 import { colors, fmtTelefone } from '@/theme'
@@ -123,9 +123,16 @@ export default function Dados() {
           multiline
           labelRight={
             <Pressable onPress={usarLocalizacao} hitSlop={8} disabled={localizando}>
-              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>
-                {localizando ? 'Localizando...' : '📍 Usar minha localização atual'}
-              </Text>
+              {localizando ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>Carregando...</Text>
+                </View>
+              ) : (
+                <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>
+                  📍 Usar minha localização atual
+                </Text>
+              )}
             </Pressable>
           }
         />
@@ -133,7 +140,7 @@ export default function Dados() {
           <Text style={{ color: colors.red, fontSize: 12, marginTop: -8, marginBottom: 10 }}>{erroLoc}</Text>
         ) : usouLocalizacao ? (
           <Text style={{ color: '#b45309', fontSize: 12, marginTop: -8, marginBottom: 10 }}>
-            Confirme o número da casa antes de continuar.
+            ⚠️ Confirme o número da casa antes de continuar.
           </Text>
         ) : null}
         <Button

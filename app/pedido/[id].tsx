@@ -261,11 +261,8 @@ export default function AcompanharPedido() {
           <Text style={{ fontWeight: '900', color: colors.text, fontSize: 18, marginBottom: 4 }}>
             💠 Pague com Pix
           </Text>
-          <Text style={{ color: colors.textSoft, fontSize: 13, textAlign: 'center', marginBottom: 4 }}>
+          <Text style={{ color: colors.textSoft, fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
             Escaneie o QR Code ou copie o código abaixo
-          </Text>
-          <Text style={{ color: '#b45309', fontSize: 12, fontWeight: '700', textAlign: 'center', marginBottom: 12 }}>
-            Você tem {restanteFmt} pra confirmar o pagamento
           </Text>
           <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
             <QRCode value={pix} size={190} />

@@ -237,6 +237,7 @@ export default function Checkout() {
 
       <Field label="Observações (opcional)" value={obs} onChangeText={setObs} placeholder="Ex: sem cebola, troco para R$ 50..." multiline />
 
+      <SectionTitle>Resumo</SectionTitle>
       <Card>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Text style={{ color: colors.textSoft }}>Subtotal</Text>
