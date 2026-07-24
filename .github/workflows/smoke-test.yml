@@ -1,0 +1,32 @@
+name: Smoke Test Write
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login + insert + delete
+        env:
+          URL: https://klbscaztdubuekdwsecu.supabase.co
+          KEY: sb_publishable_b5x14wPgfrDQT-rIaMLhVA_MOL2VaGc
+        run: |
+          set -e
+          TOKEN=$(curl -s -X POST "$URL/auth/v1/token?grant_type=password" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d '{"email":"maria@restaurante.com","password":"restaurante1234"}' | jq -r .access_token)
+          if [ "$TOKEN" = "null" ] || [ -z "$TOKEN" ]; then echo "LOGIN FALHOU"; exit 1; fi
+          echo "login ok"
+          RESP=$(curl -s -X POST "$URL/rest/v1/ingredientes" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" -H "Prefer: return=representation" \
+            -d '{"nome":"__smoketest__","categoria":"acompanhamento"}')
+          echo "insert resp: $RESP"
+          ID=$(echo "$RESP" | jq -r '.[0].id')
+          if [ "$ID" = "null" ] || [ -z "$ID" ]; then echo "INSERT FALHOU"; exit 1; fi
+          echo "insert ok id=$ID"
+          DEL=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$URL/rest/v1/ingredientes?id=eq.$ID" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $TOKEN")
+          echo "delete http $DEL"
+          if [ "$DEL" != "204" ]; then echo "DELETE FALHOU"; exit 1; fi
+          echo "WRITE TEST OK"
