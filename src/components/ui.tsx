@@ -95,6 +95,7 @@ export function Field({
   multiline,
   autoCapitalize,
   labelRight,
+  editable,
 }: {
   label: string
   value: string
@@ -105,6 +106,7 @@ export function Field({
   multiline?: boolean
   autoCapitalize?: 'none' | 'sentences' | 'words'
   labelRight?: ReactNode
+  editable?: boolean
 }) {
   return (
     <View style={{ marginBottom: 14 }}>
@@ -121,6 +123,7 @@ export function Field({
         secureTextEntry={secureTextEntry}
         multiline={multiline}
         autoCapitalize={autoCapitalize}
+        editable={editable}
         style={{
           backgroundColor: colors.card,
           borderWidth: 1,
@@ -132,6 +135,7 @@ export function Field({
           color: colors.text,
           minHeight: multiline ? 80 : undefined,
           textAlignVertical: multiline ? 'top' : undefined,
+          opacity: editable === false ? 0.7 : 1,
         }}
       />
     </View>

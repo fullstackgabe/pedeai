@@ -5,12 +5,13 @@ import { colors } from '@/theme'
 import { useAuth } from '@/lib/auth'
 import { Button, Card, Field } from '@/components/ui'
 
+const DEMO_EMAIL = 'demo@demo.com'
+const DEMO_SENHA = 'demo1234'
+
 export default function Login() {
   const router = useRouter()
   const { session, ready, signIn } = useAuth()
 
-  const [email, setEmail] = useState('')
-  const [senha, setSenha] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [entrando, setEntrando] = useState(false)
 
@@ -21,7 +22,7 @@ export default function Login() {
   const entrar = async () => {
     setEntrando(true)
     setErro(null)
-    const err = await signIn(email, senha)
+    const err = await signIn(DEMO_EMAIL, DEMO_SENHA)
     if (err) {
       setErro(err)
       setEntrando(false)
@@ -39,22 +40,10 @@ export default function Login() {
         <Text style={{ color: colors.textSoft, fontSize: 13, marginBottom: 16 }}>
           Área restrita para gerenciar pedidos e o cardápio do dia.
         </Text>
-        <Field
-          label="E-mail"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="voce@restaurante.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <Field label="Senha" value={senha} onChangeText={setSenha} placeholder="••••••••" secureTextEntry />
+        <Field label="E-mail" value={DEMO_EMAIL} onChangeText={() => {}} editable={false} />
+        <Field label="Senha" value={DEMO_SENHA} onChangeText={() => {}} secureTextEntry editable={false} />
         {erro ? <Text style={{ color: colors.red, fontWeight: '600', marginBottom: 10 }}>{erro}</Text> : null}
-        <Button
-          title="Entrar"
-          onPress={entrar}
-          loading={entrando}
-          disabled={!email.includes('@') || senha.length < 6}
-        />
+        <Button title="Entrar" onPress={entrar} loading={entrando} />
       </Card>
     </ScrollView>
   )
