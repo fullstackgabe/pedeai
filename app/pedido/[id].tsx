@@ -51,6 +51,7 @@ export default function AcompanharPedido() {
   const [verificando, setVerificando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [recebendo, setRecebendo] = useState(false)
+  const [pixCarregado, setPixCarregado] = useState(false)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
   const cobrancaPedida = useRef(false)
   const ativoRef = useRef(true)
@@ -127,9 +128,15 @@ export default function AcompanharPedido() {
       }
       if (r.forma_pagamento === 'pix' && !r.pago && !r.pix_copia_cola && !cobrancaPedida.current) {
         cobrancaPedida.current = true
-        const cob = await cobrancaPix(String(id))
-        if (cob?.qr_code) setMpQr(cob.qr_code)
-        if (cob?.pago) load()
+        try {
+          const cob = await cobrancaPix(String(id))
+          if (cob?.qr_code) setMpQr(cob.qr_code)
+          if (cob?.pago) load()
+        } finally {
+          setPixCarregado(true)
+        }
+      } else if (r.forma_pagamento === 'pix') {
+        setPixCarregado(true)
       }
     } catch {}
   }, [id])
@@ -264,8 +271,20 @@ export default function AcompanharPedido() {
           <Text style={{ color: colors.textSoft, fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
             Escaneie o QR Code ou copie o código abaixo
           </Text>
-          <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
-            <QRCode value={pix} size={190} />
+          <View
+            style={{
+              backgroundColor: '#fff',
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.border,
+              width: 214,
+              height: 214,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {pixCarregado ? <QRCode value={pix} size={190} /> : <ActivityIndicator size="large" color={colors.primary} />}
           </View>
           <Pressable
             onPress={copiar}
@@ -293,7 +312,7 @@ export default function AcompanharPedido() {
             title="Confirmar pagamento"
             onPress={verificarPagamento}
             loading={verificando}
-            variant="ghost"
+            variant="outline"
             style={{ marginTop: 4, alignSelf: 'stretch' }}
           />
         </Card>
@@ -400,16 +419,6 @@ export default function AcompanharPedido() {
         </Text>
       ) : null}
 
-      {resumo.status === 'novo' && resumo.forma_pagamento !== 'pix' ? (
-        <Button
-          title="Cancelar pedido"
-          variant="danger"
-          loading={cancelando}
-          onPress={cancelar}
-          style={{ marginBottom: 14 }}
-        />
-      ) : null}
-
       {resumo.status === 'saiu_entrega' ? (
         <Button
           title="Recebi meu pedido ✓"
@@ -450,6 +459,16 @@ export default function AcompanharPedido() {
         </Pressable>
       ) : null}
 
+      {resumo.status === 'novo' && resumo.forma_pagamento !== 'pix' ? (
+        <Button
+          title="Cancelar pedido"
+          variant="danger"
+          loading={cancelando}
+          onPress={cancelar}
+          style={{ marginBottom: 14 }}
+        />
+      ) : null}
+
       {pix && !resumo.pago && !cancelado && !concluido ? (
         <Card style={{ alignItems: 'center' }}>
           <Text style={{ fontWeight: '800', color: colors.text, fontSize: 16, marginBottom: 4 }}>
@@ -473,8 +492,20 @@ export default function AcompanharPedido() {
               </Text>
             </View>
           ) : null}
-          <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
-            <QRCode value={pix} size={190} />
+          <View
+            style={{
+              backgroundColor: '#fff',
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.border,
+              width: 214,
+              height: 214,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {pixCarregado ? <QRCode value={pix} size={190} /> : <ActivityIndicator size="large" color={colors.primary} />}
           </View>
           <Pressable
             onPress={copiar}
@@ -502,7 +533,7 @@ export default function AcompanharPedido() {
             title="Confirmar pagamento"
             onPress={verificarPagamento}
             loading={verificando}
-            variant="ghost"
+            variant="outline"
             style={{ marginTop: 4, alignSelf: 'stretch' }}
           />
         </Card>

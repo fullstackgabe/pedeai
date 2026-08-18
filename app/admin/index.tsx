@@ -211,7 +211,7 @@ function AbaPedidos() {
 
       {visiveis.length === 0 ? (
         <Card style={{ alignItems: 'center', paddingVertical: 30 }}>
-          <Text style={{ color: colors.textSoft }}>Nenhum pedido por aqui ainda.</Text>
+          <Text style={{ color: colors.textSoft }}>Nenhum pedido ainda.</Text>
         </Card>
       ) : (
         visiveis.map((p) => <PedidoCard key={p.id} pedido={p} onMudar={mudar} onPagar={pagar} />)

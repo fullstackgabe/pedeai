@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Location from 'expo-location'
 import { colors, fmtTelefone } from '@/theme'
@@ -17,6 +17,13 @@ export default function Dados() {
   const [localizando, setLocalizando] = useState(false)
   const [erroLoc, setErroLoc] = useState<string | null>(null)
   const [usouLocalizacao, setUsouLocalizacao] = useState(false)
+  const [dotsCarregando, setDotsCarregando] = useState(1)
+
+  useEffect(() => {
+    if (!localizando) return
+    const t = setInterval(() => setDotsCarregando((d) => (d % 3) + 1), 400)
+    return () => clearInterval(t)
+  }, [localizando])
 
   useEffect(() => {
     loadCliente().then((c) => {
@@ -124,10 +131,14 @@ export default function Dados() {
           labelRight={
             <Pressable onPress={usarLocalizacao} hitSlop={8} disabled={localizando}>
               {localizando ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>Carregando...</Text>
-                </View>
+                <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>
+                  ⏳ Carregando
+                  {[1, 2, 3].map((i) => (
+                    <Text key={i} style={{ opacity: i <= dotsCarregando ? 1 : 0 }}>
+                      .
+                    </Text>
+                  ))}
+                </Text>
               ) : (
                 <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>
                   📍 Usar minha localização atual
