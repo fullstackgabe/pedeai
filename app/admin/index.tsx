@@ -71,7 +71,7 @@ export default function Admin() {
           }}
           hitSlop={10}
         >
-          <Text style={{ color: colors.red, fontWeight: '700', fontSize: 16 }}>Sair</Text>
+          <Text style={{ color: '#f00', fontWeight: '700', fontSize: 16 }}>Sair</Text>
         </Pressable>
       </View>
 
@@ -373,7 +373,7 @@ function PedidoCard({
           {p.forma_pagamento === 'pix' && !p.pago ? (
             <Button
               title="Confirmar Pix recebido"
-              variant="outline"
+              variant="success"
               onPress={() => onPagar(p)}
             />
           ) : null}

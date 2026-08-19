@@ -124,7 +124,7 @@ export default function Checkout() {
         title="＋ Adicionar outra marmita"
         variant="outline"
         onPress={() => router.push('/montar')}
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 16, backgroundColor: colors.primarySoft, borderWidth: 0 }}
       />
 
 

@@ -307,7 +307,7 @@ export default function AcompanharPedido() {
             onPress={verificarPagamento}
             loading={verificando}
             variant="outline"
-            style={{ marginTop: 4, alignSelf: 'stretch' }}
+            style={{ marginTop: 4, alignSelf: 'stretch', backgroundColor: colors.primarySoft, borderWidth: 0 }}
           />
         </Card>
       </ScrollView>
@@ -439,9 +439,7 @@ export default function AcompanharPedido() {
             )
           }
           style={({ pressed }) => ({
-            backgroundColor: colors.blueSoft,
-            borderWidth: 1.5,
-            borderColor: colors.blue,
+            backgroundColor: colors.blue,
             borderRadius: 14,
             paddingVertical: 14,
             alignItems: 'center',
@@ -449,7 +447,7 @@ export default function AcompanharPedido() {
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <Text style={{ color: colors.blue, fontWeight: '700', fontSize: 16 }}>Ir para o endereço  →</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Ir para o endereço</Text>
         </Pressable>
       ) : null}
 
@@ -528,7 +526,7 @@ export default function AcompanharPedido() {
             onPress={verificarPagamento}
             loading={verificando}
             variant="outline"
-            style={{ marginTop: 4, alignSelf: 'stretch' }}
+            style={{ marginTop: 4, alignSelf: 'stretch', backgroundColor: colors.primarySoft, borderWidth: 0 }}
           />
         </Card>
       ) : null}
@@ -542,7 +540,7 @@ export default function AcompanharPedido() {
       ) : null}
 
       {cancelado || concluido ? (
-        <Button title="Fazer novo pedido" onPress={() => router.replace('/')} variant="outline" style={{ marginTop: 4 }} />
+        <Button title="Fazer novo pedido" onPress={() => router.replace('/')} style={{ marginTop: 4 }} />
       ) : null}
     </ScrollView>
   )
