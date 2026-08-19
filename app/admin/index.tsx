@@ -234,7 +234,13 @@ function AbaPedidos() {
             Os pedidos concluídos e cancelados serão removidos de vez.
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Button title="Cancelar" variant="outline" onPress={() => setConfirmarLimpar(false)} disabled={limpando} style={{ flex: 1 }} />
+            <Button
+              title="Cancelar"
+              variant="outline"
+              onPress={() => setConfirmarLimpar(false)}
+              disabled={limpando}
+              style={{ flex: 1, backgroundColor: colors.primarySoft, borderWidth: 0 }}
+            />
             <Button title="Limpar" variant="danger" onPress={limpar} loading={limpando} style={{ flex: 1 }} />
           </View>
         </Card>
