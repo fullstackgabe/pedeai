@@ -150,15 +150,9 @@ export default function AcompanharPedido() {
     }
   }, [load])
 
-  if (naoEncontrado) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg, padding: 24 }}>
-        <Text style={{ fontSize: 40 }}>🤔</Text>
-        <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8 }}>Pedido não encontrado</Text>
-        <Button title="Voltar ao início" onPress={() => router.replace('/')} style={{ marginTop: 16 }} />
-      </View>
-    )
-  }
+  useEffect(() => {
+    if (naoEncontrado) router.replace('/')
+  }, [naoEncontrado, router])
 
   if (!resumo) {
     return (

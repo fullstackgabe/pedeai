@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { colors, moeda } from '@/theme'
 import { useAuth } from '@/lib/auth'
@@ -110,6 +110,8 @@ function AbaPedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState<'ativos' | 'finalizados'>('ativos')
+  const [confirmarLimpar, setConfirmarLimpar] = useState(false)
+  const [limpando, setLimpando] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -152,6 +154,18 @@ function AbaPedidos() {
     }
   }
 
+  const limpar = async () => {
+    setLimpando(true)
+    try {
+      await limparPedidos()
+      setPedidos((prev) => prev.filter((x) => !['concluido', 'cancelado'].includes(x.status)))
+    } catch {
+      load()
+    }
+    setLimpando(false)
+    setConfirmarLimpar(false)
+  }
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -161,6 +175,7 @@ function AbaPedidos() {
   }
 
   return (
+    <>
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {(
@@ -186,14 +201,7 @@ function AbaPedidos() {
         ))}
         {filtro === 'finalizados' && pedidos.some((x) => ['concluido', 'cancelado'].includes(x.status)) ? (
           <Pressable
-            onPress={async () => {
-              try {
-                await limparPedidos()
-                setPedidos((prev) => prev.filter((x) => !['concluido', 'cancelado'].includes(x.status)))
-              } catch {
-                load()
-              }
-            }}
+            onPress={() => setConfirmarLimpar(true)}
             style={{
               backgroundColor: colors.red,
               borderRadius: 999,
@@ -217,6 +225,22 @@ function AbaPedidos() {
         visiveis.map((p) => <PedidoCard key={p.id} pedido={p} onMudar={mudar} onPagar={pagar} />)
       )}
     </ScrollView>
+
+    <Modal visible={confirmarLimpar} transparent animationType="fade" onRequestClose={() => setConfirmarLimpar(false)}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,.45)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <Card style={{ width: '100%', maxWidth: 380, marginBottom: 0 }}>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, marginBottom: 10 }}>Limpar finalizados?</Text>
+          <Text style={{ color: colors.textSoft, marginBottom: 16 }}>
+            Os pedidos concluídos e cancelados serão removidos de vez.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Button title="Cancelar" variant="outline" onPress={() => setConfirmarLimpar(false)} disabled={limpando} style={{ flex: 1 }} />
+            <Button title="Limpar" variant="danger" onPress={limpar} loading={limpando} style={{ flex: 1 }} />
+          </View>
+        </Card>
+      </View>
+    </Modal>
+    </>
   )
 }
 
@@ -350,7 +374,6 @@ function PedidoCard({
           <Button
             title="Cancelar pedido"
             variant="danger"
-            style={{ backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.red }}
             onPress={() => onMudar(p, 'cancelado')}
           />
         </View>
