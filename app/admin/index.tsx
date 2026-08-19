@@ -63,7 +63,7 @@ export default function Admin() {
           borderBottomColor: colors.border,
         }}
       >
-        <Logo iconSize={22} textSize={18} />
+        <Logo textSize={18} />
         <Pressable
           onPress={async () => {
             await signOut()
@@ -71,7 +71,7 @@ export default function Admin() {
           }}
           hitSlop={10}
         >
-          <Text style={{ color: colors.red, fontWeight: '700', fontSize: 13 }}>Sair</Text>
+          <Text style={{ color: colors.red, fontWeight: '700', fontSize: 16 }}>Sair</Text>
         </Pressable>
       </View>
 

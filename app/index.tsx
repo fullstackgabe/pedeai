@@ -41,9 +41,9 @@ export default function Home() {
           borderBottomColor: colors.border,
         }}
       >
-        <Logo iconSize={24} textSize={18} />
+        <Logo textSize={18} />
         <Pressable onPress={() => router.push('/login')} hitSlop={12}>
-          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>Login</Text>
+          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Login</Text>
         </Pressable>
       </View>
 

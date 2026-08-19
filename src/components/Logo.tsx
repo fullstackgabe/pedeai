@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native'
+import { Text } from 'react-native'
 import Svg, { Path, Rect } from 'react-native-svg'
 import { colors } from '@/theme'
 
@@ -23,11 +23,6 @@ export function LogoWordmark({ size = 17, light = false }: { size?: number; ligh
   )
 }
 
-export function Logo({ iconSize = 24, textSize = 17, light = false }: { iconSize?: number; textSize?: number; light?: boolean }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-      <LogoIcon size={iconSize} />
-      <LogoWordmark size={textSize} light={light} />
-    </View>
-  )
+export function Logo({ textSize = 17, light = false }: { textSize?: number; light?: boolean }) {
+  return <LogoWordmark size={textSize} light={light} />
 }

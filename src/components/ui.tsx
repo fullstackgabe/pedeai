@@ -50,13 +50,13 @@ export function Button({
   onPress: () => void
   disabled?: boolean
   loading?: boolean
-  variant?: 'primary' | 'outline' | 'ghost' | 'danger'
+  variant?: 'primary' | 'outline' | 'ghost' | 'danger' | 'success'
   style?: ViewStyle
 }) {
   const bg =
-    variant === 'primary' ? colors.primary : variant === 'danger' ? colors.redSoft : 'transparent'
+    variant === 'primary' ? colors.primary : variant === 'danger' ? colors.redSoft : variant === 'success' ? colors.greenSoft : 'transparent'
   const fg =
-    variant === 'primary' ? '#fff' : variant === 'danger' ? colors.red : colors.primary
+    variant === 'primary' ? '#fff' : variant === 'danger' ? colors.red : variant === 'success' ? colors.green : colors.primary
   return (
     <Pressable
       onPress={onPress}
@@ -69,8 +69,8 @@ export function Button({
           paddingHorizontal: 18,
           alignItems: 'center',
           justifyContent: 'center',
-          borderWidth: variant === 'outline' ? 1.5 : 0,
-          borderColor: colors.primary,
+          borderWidth: variant === 'outline' || variant === 'danger' || variant === 'success' ? 1.5 : 0,
+          borderColor: variant === 'danger' ? colors.red : variant === 'success' ? colors.green : colors.primary,
           opacity: disabled || loading ? 0.5 : pressed ? 0.85 : 1,
         },
         style,

@@ -254,13 +254,13 @@ export default function AcompanharPedido() {
             style={{
               backgroundColor: colors.primarySoft,
               borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 6,
+              paddingHorizontal: 18,
+              paddingVertical: 8,
               marginTop: 10,
             }}
           >
-            <Text style={{ color: colors.primaryDark, fontWeight: '700', fontSize: 13 }}>
-              {restanteFmt} para pagar
+            <Text style={{ color: colors.primaryDark, fontWeight: '900', fontSize: 20 }}>
+              vence em {restanteFmt}
             </Text>
           </View>
         </Card>
@@ -305,7 +305,7 @@ export default function AcompanharPedido() {
           <Button
             title={copiado ? '✓ Código copiado!' : 'Copiar código Pix'}
             onPress={copiar}
-            variant={copiado ? 'outline' : 'primary'}
+            variant={copiado ? 'success' : 'primary'}
             style={{ marginTop: 10, alignSelf: 'stretch' }}
           />
           <Button
@@ -482,13 +482,13 @@ export default function AcompanharPedido() {
               style={{
                 backgroundColor: restanteMs < 60000 ? colors.redSoft : colors.primarySoft,
                 borderRadius: 999,
-                paddingHorizontal: 14,
-                paddingVertical: 6,
+                paddingHorizontal: 18,
+                paddingVertical: 8,
                 marginBottom: 12,
               }}
             >
-              <Text style={{ color: restanteMs < 60000 ? colors.red : colors.primaryDark, fontWeight: '800', fontSize: 13 }}>
-                ⏳ {restanteFmt} para pagar
+              <Text style={{ color: restanteMs < 60000 ? colors.red : colors.primaryDark, fontWeight: '900', fontSize: 20 }}>
+                ⏳ vence em {restanteFmt}
               </Text>
             </View>
           ) : null}
@@ -526,7 +526,7 @@ export default function AcompanharPedido() {
           <Button
             title={copiado ? '✓ Código copiado!' : 'Copiar código Pix'}
             onPress={copiar}
-            variant={copiado ? 'outline' : 'primary'}
+            variant={copiado ? 'success' : 'primary'}
             style={{ marginTop: 10, alignSelf: 'stretch' }}
           />
           <Button
