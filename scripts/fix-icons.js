@@ -5,8 +5,6 @@ const DIST = 'dist'
 const from = path.join(DIST, 'assets', 'node_modules')
 const to = path.join(DIST, 'assets', 'vendor')
 
-const FAVICON = '<link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7">'
-
 const HEAD_EXTRA = `<style>
       html,body{margin:0;background:linear-gradient(135deg,#fed7aa,#fecaca);min-height:100vh}
       #root:empty{min-height:100vh}
@@ -26,19 +24,10 @@ const HEAD_EXTRA = `<style>
 
 const index = path.join(DIST, 'index.html')
 if (fs.existsSync(index)) {
-  let html = fs.readFileSync(index, 'utf8')
-  let changed = false
-  if (!html.includes('rel="icon"')) {
-    html = html.replace('</title>', '</title>\n    ' + FAVICON)
-    changed = true
-  }
+  const html = fs.readFileSync(index, 'utf8')
   if (!html.includes('pedeai-spin')) {
-    html = html.replace('</head>', '  ' + HEAD_EXTRA + '\n  </head>')
-    changed = true
-  }
-  if (changed) {
-    fs.writeFileSync(index, html)
-    console.log('favicon + loading style injetados')
+    fs.writeFileSync(index, html.replace('</head>', '  ' + HEAD_EXTRA + '\n  </head>'))
+    console.log('loading style injetado')
   }
 }
 

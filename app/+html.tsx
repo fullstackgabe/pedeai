@@ -9,7 +9,6 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <title>PedeAí</title>
-        <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7" />
         <ScrollViewStyleReset />
         <style>{`
           html,body{margin:0;background:linear-gradient(135deg,#fed7aa,#fecaca);min-height:100vh}
