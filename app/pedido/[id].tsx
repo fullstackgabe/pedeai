@@ -439,7 +439,9 @@ export default function AcompanharPedido() {
             )
           }
           style={({ pressed }) => ({
-            backgroundColor: colors.blue,
+            backgroundColor: colors.blueSoft,
+            borderWidth: 1.5,
+            borderColor: colors.blue,
             borderRadius: 14,
             paddingVertical: 14,
             alignItems: 'center',
@@ -447,17 +449,18 @@ export default function AcompanharPedido() {
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Ir para o endereço</Text>
+          <Text style={{ color: colors.blue, fontWeight: '700', fontSize: 16 }}>Ir para o endereço</Text>
         </Pressable>
       ) : null}
 
       {resumo.status === 'novo' && resumo.forma_pagamento !== 'pix' ? (
         <Button
           title="Cancelar pedido"
-          variant="danger"
+          variant="outline"
           loading={cancelando}
           onPress={cancelar}
-          style={{ marginBottom: 14 }}
+          style={{ marginBottom: 14, backgroundColor: colors.redSoft, borderColor: colors.red }}
+          textColor={colors.red}
         />
       ) : null}
 

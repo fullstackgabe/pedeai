@@ -240,6 +240,7 @@ function AbaPedidos() {
               onPress={() => setConfirmarLimpar(false)}
               disabled={limpando}
               style={{ flex: 1, backgroundColor: colors.primarySoft, borderWidth: 0 }}
+              textColor={colors.primary}
             />
             <Button title="Limpar" variant="danger" onPress={limpar} loading={limpando} style={{ flex: 1 }} />
           </View>
@@ -379,8 +380,10 @@ function PedidoCard({
           ) : null}
           <Button
             title="Cancelar pedido"
-            variant="danger"
+            variant="outline"
             onPress={() => onMudar(p, 'cancelado')}
+            style={{ backgroundColor: colors.redSoft, borderWidth: 0 }}
+            textColor={colors.red}
           />
         </View>
       ) : null}

@@ -45,6 +45,7 @@ export function Button({
   loading,
   variant = 'primary',
   style,
+  textColor,
 }: {
   title: string
   onPress: () => void
@@ -52,11 +53,12 @@ export function Button({
   loading?: boolean
   variant?: 'primary' | 'outline' | 'ghost' | 'danger' | 'success'
   style?: ViewStyle
+  textColor?: string
 }) {
   const bg =
     variant === 'primary' ? colors.primary : variant === 'danger' ? colors.red : variant === 'success' ? colors.greenSoft : 'transparent'
   const fg =
-    variant === 'primary' || variant === 'danger' ? '#fff' : variant === 'success' ? colors.green : colors.primary
+    textColor ?? (variant === 'primary' || variant === 'danger' ? '#fff' : variant === 'success' ? colors.green : colors.primary)
   return (
     <Pressable
       onPress={onPress}
